@@ -1,0 +1,348 @@
+import { BodyPreset } from './types';
+
+export const SIMULATION_PRESETS: BodyPreset[] = [
+  {
+    id: 'kepler-orbit',
+    name: 'Órbita Elíptica Kepler',
+    subtitle: 'Estrella central masiva + planeta en órbita excéntrica con estela',
+    description: 'Visualización canónica de la Relatividad General: una masa estelar deforma el espaciotiempo creando un profundo pozo de potencial gravitatorio que curva la trayectoria de un planeta en una elipse de Kepler.',
+    icon: 'Orbit',
+    bodies: [
+      {
+        id: 'star-1',
+        name: 'Sol Primal',
+        type: 'star',
+        mass: 1200,
+        radius: 3.4,
+        color: '#f59e0b',
+        glowColor: '#fbbf24',
+        position: { x: 0, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 0 },
+        isFixed: true,
+      },
+      {
+        id: 'planet-1',
+        name: 'Planeta Kepler-b',
+        type: 'planet',
+        mass: 15,
+        radius: 1.3,
+        color: '#38bdf8',
+        glowColor: '#0284c7',
+        position: { x: 30, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 4.6 },
+        isFixed: false,
+      },
+      {
+        id: 'moon-1',
+        name: 'Satélite Selene',
+        type: 'moon',
+        mass: 1.5,
+        radius: 0.65,
+        color: '#cbd5e1',
+        glowColor: '#94a3b8',
+        position: { x: 33.2, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 6.4 },
+        isFixed: false,
+      },
+    ],
+    defaultConfig: {
+      G: 1.0,
+      deformationScale: 1.0,
+      timeScale: 1.0,
+      softening: 1.5,
+    },
+  },
+  {
+    id: 'binary-stars',
+    name: 'Estrella Binaria',
+    subtitle: 'Dos soles orbitándose mutuamente con doble pozo dinámico',
+    description: 'Dos masas equivalentes orbitan su centro de masas mutuo. El pozo gravitatorio rota continuamente formando una onda gravitatoria espiralada en la malla, con un planeta circumbinario exterior.',
+    icon: 'Radio',
+    bodies: [
+      {
+        id: 'binary-a',
+        name: 'Alfa Canis A',
+        type: 'star',
+        mass: 650,
+        radius: 2.8,
+        color: '#f97316',
+        glowColor: '#fb923c',
+        position: { x: -14, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: -3.4 },
+        isFixed: false,
+      },
+      {
+        id: 'binary-b',
+        name: 'Alfa Canis B',
+        type: 'star',
+        mass: 650,
+        radius: 2.8,
+        color: '#3b82f6',
+        glowColor: '#60a5fa',
+        position: { x: 14, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 3.4 },
+        isFixed: false,
+      },
+      {
+        id: 'circumbinary-planet',
+        name: 'Tatooine Exterior',
+        type: 'giant',
+        mass: 22,
+        radius: 1.5,
+        color: '#10b981',
+        glowColor: '#34d399',
+        position: { x: 0, y: 0, z: 42 },
+        velocity: { x: -4.4, y: 0, z: 0 },
+        isFixed: false,
+      },
+    ],
+    defaultConfig: {
+      G: 1.0,
+      deformationScale: 0.95,
+      timeScale: 1.0,
+      softening: 1.6,
+    },
+  },
+  {
+    id: 'gravitational-collapse',
+    name: 'Colapso Gravitatorio / Nebulosa',
+    subtitle: 'Nube de partículas ligeras colapsando por atracción mutua',
+    description: 'Simulación de acreción protoestelar: 36 partículas dispersas con momento angular inicial interactúan gravitacionalmente, chocan y se fusionan conservando masa y momento para forjar un núcleo estelar.',
+    icon: 'Sparkles',
+    bodies: (() => {
+      const list: any[] = [];
+      const numParticles = 36;
+      for (let i = 0; i < numParticles; i++) {
+        const radius = 8 + Math.sqrt(Math.random()) * 32;
+        const angle = Math.random() * Math.PI * 2;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        // Tangential velocity with some dispersion
+        const orbitalSpeed = Math.sqrt((1.0 * 300) / (radius + 5)) * (0.8 + Math.random() * 0.4);
+        const vx = -Math.sin(angle) * orbitalSpeed;
+        const vz = Math.cos(angle) * orbitalSpeed;
+
+        list.push({
+          id: `nebula-p-${i}`,
+          name: `Protopartícula #${i + 1}`,
+          type: i === 0 ? 'star' : i % 5 === 0 ? 'planet' : 'asteroid',
+          mass: i === 0 ? 250 : 4 + Math.random() * 8,
+          radius: i === 0 ? 2.5 : 0.6 + Math.random() * 0.6,
+          color: i === 0 ? '#fbbf24' : ['#38bdf8', '#818cf8', '#c084fc', '#f472b6', '#34d399'][i % 5],
+          glowColor: '#60a5fa',
+          position: i === 0 ? { x: 0, y: 0, z: 0 } : { x, y: 0, z },
+          velocity: i === 0 ? { x: 0, y: 0, z: 0 } : { x: vx, y: 0, z: vz },
+          isFixed: false,
+        });
+      }
+      return list;
+    })(),
+    defaultConfig: {
+      G: 1.2,
+      deformationScale: 0.85,
+      timeScale: 1.2,
+      softening: 1.4,
+    },
+  },
+  {
+    id: 'three-body-figure-eight',
+    name: 'Problema de 3 Cuerpos (Figura 8)',
+    subtitle: 'Solución coreográfica periódica en ocho de Moore / Chenciner',
+    description: 'La célebre coreografía gravitacional descubierta matemáticamente donde 3 masas idénticas se persiguen indefinidamente trazando una figura en forma de 8 sin colisionar.',
+    icon: 'Infinity',
+    bodies: (() => {
+      // Numerical solution initial conditions (scaled for our simulation)
+      const scale = 22;
+      const vScale = 2.45;
+      const x1 = 0.97000436 * scale;
+      const z1 = -0.24308753 * scale;
+      const vx3 = 0.93240737 * vScale;
+      const vz3 = 0.86473146 * vScale;
+      const vx1 = -vx3 / 2;
+      const vz1 = -vz3 / 2;
+
+      return [
+        {
+          id: 'tri-1',
+          name: 'Cuerpo Alfa',
+          type: 'star',
+          mass: 380,
+          radius: 2.2,
+          color: '#ec4899',
+          glowColor: '#f472b6',
+          position: { x: x1, y: 0, z: z1 },
+          velocity: { x: vx1, y: 0, z: vz1 },
+          isFixed: false,
+        },
+        {
+          id: 'tri-2',
+          name: 'Cuerpo Beta',
+          type: 'star',
+          mass: 380,
+          radius: 2.2,
+          color: '#06b6d4',
+          glowColor: '#22d3ee',
+          position: { x: -x1, y: 0, z: -z1 },
+          velocity: { x: vx1, y: 0, z: vz1 },
+          isFixed: false,
+        },
+        {
+          id: 'tri-3',
+          name: 'Cuerpo Gamma',
+          type: 'star',
+          mass: 380,
+          radius: 2.2,
+          color: '#eab308',
+          glowColor: '#fde047',
+          position: { x: 0, y: 0, z: 0 },
+          velocity: { x: vx3, y: 0, z: vz3 },
+          isFixed: false,
+        },
+      ];
+    })(),
+    defaultConfig: {
+      G: 1.0,
+      deformationScale: 0.9,
+      timeScale: 0.85,
+      softening: 1.0,
+    },
+  },
+  {
+    id: 'black-hole-accretion',
+    name: 'Agujero Negro & Escombros Relativistas',
+    subtitle: 'Singularidad supermasiva capturando estrellas y planetas',
+    description: 'Un agujero negro de deformación extrema curva el espaciotiempo creando un horizonte de sucesos. Múltiples cuerpos de prueba orbitan al límite de la velocidad relativista.',
+    icon: 'Disc',
+    bodies: [
+      {
+        id: 'bh-central',
+        name: 'Gargantúa (Singularidad)',
+        type: 'blackhole',
+        mass: 3200,
+        radius: 3.2,
+        color: '#000000',
+        glowColor: '#fb923c',
+        position: { x: 0, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 0 },
+        isFixed: true,
+      },
+      {
+        id: 'inner-star',
+        name: 'Estrella en Caída Libre',
+        type: 'star',
+        mass: 120,
+        radius: 1.8,
+        color: '#facc15',
+        glowColor: '#fde047',
+        position: { x: 18, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 12.2 },
+        isFixed: false,
+      },
+      {
+        id: 'outer-planet-1',
+        name: 'Mundo Miller',
+        type: 'planet',
+        mass: 14,
+        radius: 1.2,
+        color: '#38bdf8',
+        glowColor: '#0284c7',
+        position: { x: -32, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: -8.8 },
+        isFixed: false,
+      },
+      {
+        id: 'outer-planet-2',
+        name: 'Mundo Mann',
+        type: 'planet',
+        mass: 12,
+        radius: 1.1,
+        color: '#a78bfa',
+        glowColor: '#c4b5fd',
+        position: { x: 0, y: 0, z: 46 },
+        velocity: { x: 7.2, y: 0, z: 0 },
+        isFixed: false,
+      },
+    ],
+    defaultConfig: {
+      G: 1.0,
+      deformationScale: 1.25,
+      timeScale: 0.9,
+      softening: 1.8,
+    },
+  },
+  {
+    id: 'solar-system',
+    name: 'Sistema Solar Escalar',
+    subtitle: 'Sol central + 4 planetas rocosos y jovianos en órbitas concéntricas',
+    description: 'Arquitectura planetaria clásica con órbitas casi circulares donde la velocidad orbital disminuye con la distancia según la tercera ley de Kepler: v ∝ 1/√r.',
+    icon: 'Sun',
+    bodies: [
+      {
+        id: 'sun',
+        name: 'Sol Central',
+        type: 'star',
+        mass: 1500,
+        radius: 3.8,
+        color: '#f59e0b',
+        glowColor: '#fbbf24',
+        position: { x: 0, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 0 },
+        isFixed: true,
+      },
+      {
+        id: 'mercury',
+        name: 'Mercurio',
+        type: 'asteroid',
+        mass: 3,
+        radius: 0.7,
+        color: '#94a3b8',
+        glowColor: '#64748b',
+        position: { x: 12, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 10.8 },
+        isFixed: false,
+      },
+      {
+        id: 'venus',
+        name: 'Venus',
+        type: 'planet',
+        mass: 14,
+        radius: 1.1,
+        color: '#f97316',
+        glowColor: '#ea580c',
+        position: { x: 20, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 8.4 },
+        isFixed: false,
+      },
+      {
+        id: 'earth',
+        name: 'Tierra',
+        type: 'planet',
+        mass: 18,
+        radius: 1.2,
+        color: '#0ea5e9',
+        glowColor: '#0284c7',
+        position: { x: 30, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 6.9 },
+        isFixed: false,
+      },
+      {
+        id: 'mars',
+        name: 'Marte',
+        type: 'planet',
+        mass: 8,
+        radius: 0.9,
+        color: '#ef4444',
+        glowColor: '#dc2626',
+        position: { x: 42, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 5.8 },
+        isFixed: false,
+      },
+    ],
+    defaultConfig: {
+      G: 1.0,
+      deformationScale: 1.0,
+      timeScale: 1.0,
+      softening: 1.5,
+    },
+  },
+];

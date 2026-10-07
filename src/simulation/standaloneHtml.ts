@@ -1,0 +1,1957 @@
+export function generateStandaloneHtml(): string {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Simulador de Espaciotiempo y Gravedad N-Cuerpos</title>
+  <meta name="description" content="Simulación interactiva 3D de la curvatura del espaciotiempo según la Relatividad General y gravitación newtoniana de N-cuerpos con Three.js." />
+  
+  <!-- Configuración PWA (Progressive Web App) para instalación en móviles sin botones intrusivos -->
+  <meta name="theme-color" content="#000000" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Espaciotiempo" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+
+  <!-- 1. Web App Manifest integrado en el head como Data URI -->
+  <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Simulador%20de%20Espaciotiempo%22%2C%22short_name%22%3A%22Espaciotiempo%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23000000%22%2C%22theme_color%22%3A%22%23000000%22%2C%22description%22%3A%22Simulaci%C3%B3n%20interactiva%203D%20de%20la%20curvatura%20del%20espaciotiempo%20seg%C3%BAn%20la%20Relatividad%20General%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22%2Fpwa-192x192.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%22%7D%2C%7B%22src%22%3A%22%2Fpwa-512x512.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22any%22%7D%2C%7B%22src%22%3A%22%2Fpwa-512x512.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%2C%22purpose%22%3A%22maskable%22%7D%5D%7D" />
+
+  <!-- 2. Registro Inline de Service Worker básico para permitir la instalación nativa del navegador -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        try {
+          var swCode = "const CACHE_NAME='espaciotiempo-pwa-v1';self.addEventListener('install',function(e){self.skipWaiting();});self.addEventListener('activate',function(e){e.waitUntil(clients.claim());});self.addEventListener('fetch',function(e){if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(function(r){return r||fetch(e.request).catch(function(){return caches.match(e.request);});}));});";
+          var blob = new Blob([swCode], { type: 'application/javascript' });
+          var blobUrl = URL.createObjectURL(blob);
+          navigator.serviceWorker.register(blobUrl, { scope: './' }).catch(function() {
+            navigator.serviceWorker.register('/sw.js').catch(function() {});
+          });
+        } catch (e) {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
+        }
+      });
+    }
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100dvh;
+      min-height: 100dvh;
+      width: 100%;
+      overflow: hidden;
+      background: #020611;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      touch-action: manipulation;
+    }
+
+    #app-container {
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+
+    #canvas-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: crosshair;
+      z-index: 1;
+    }
+
+    /* Estilos Glassmorphism */
+    .glass-panel {
+      background: rgba(3, 7, 18, 0.90);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.75), 0 0 24px rgba(2, 132, 199, 0.15);
+      border-radius: 14px;
+      color: #e2e8f0;
+    }
+
+    /* Header Superior */
+    header {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px;
+      z-index: 1000;
+      pointer-events: none;
+      border-radius: 14px;
+      gap: 8px;
+    }
+    header > * { pointer-events: auto; }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: monospace;
+      white-space: nowrap;
+    }
+    .hud-formula {
+      font-family: monospace;
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 1px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+
+    /* Selector de Cámara Estilo Píldora Compacto */
+    .camera-selector-box {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 10px;
+      padding: 2px 6px;
+    }
+    .camera-selector-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+    }
+    .camera-select-input {
+      background: #0b1329;
+      color: #e0f2fe;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 8px;
+      outline: none;
+      cursor: pointer;
+      min-height: 36px;
+    }
+    .camera-select-input:focus {
+      border-color: #38bdf8;
+    }
+
+    /* Botones Táctiles Accesibles */
+    .btn {
+      min-height: 44px;
+      min-width: 44px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      background: rgba(15, 23, 42, 0.75);
+      color: #f1f5f9;
+      border-radius: 10px;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+    }
+    .btn:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+    }
+    .btn.active {
+      background: rgba(2, 132, 199, 0.35);
+      border-color: #38bdf8;
+      color: #e0f2fe;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.45);
+    }
+    .btn-danger {
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+    }
+    .btn-sm {
+      min-height: 38px;
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+
+    /* Sliders de física */
+    .control-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .control-value {
+      font-family: monospace;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      border: 2px solid #0284c7;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+
+    /* HUD de Telemetría (Superior Derecho) */
+    .hud-metrics {
+      position: absolute;
+      top: 68px;
+      right: 10px;
+      padding: 12px 16px;
+      z-index: 950;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+      width: 220px;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .metric-item {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 4px;
+    }
+    .metric-val {
+      font-family: monospace;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    /* ========================================================= */
+    /* PESTAÑA INFERIOR DESLIZABLE / BOTTOM SHEET (MÓVILES) */
+    /* ========================================================= */
+    .mobile-controls-wrapper {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 2000;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .mobile-controls-wrapper > * {
+      pointer-events: auto;
+    }
+
+    /* Dock de Accesos Rápidos Móvil (Siempre Visible encima del panel inferior) */
+    .mobile-quick-dock {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 0 10px;
+      max-width: 96vw;
+      width: 100%;
+      z-index: 2000;
+    }
+
+    .quick-dock-btn {
+      min-height: 44px;
+      min-width: 44px;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      background: rgba(3, 7, 18, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      white-space: nowrap;
+      z-index: 2000;
+    }
+    /* Estilo Glassmorphism con bordes azul neón cuando activo y grisáceo cuando apagado */
+    .quick-dock-btn.grid-btn.active, .btn#btn-toggle-grid-top.active {
+      background: rgba(2, 132, 199, 0.35);
+      border: 1.5px solid #38bdf8;
+      color: #e0f2fe;
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.6), 0 4px 14px rgba(0, 0, 0, 0.6);
+    }
+    .quick-dock-btn.grid-btn.inactive, .btn#btn-toggle-grid-top.inactive {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1.5px solid rgba(148, 163, 184, 0.35);
+      color: #94a3b8;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+    .quick-dock-btn.clear-btn {
+      border: 1.5px solid rgba(239, 68, 68, 0.45);
+      color: #f87171;
+      background: rgba(15, 23, 42, 0.88);
+    }
+    .quick-dock-btn.clear-btn:hover, .quick-dock-btn.clear-btn:active {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.45);
+    }
+
+    /* Botón flotante para apuntar y lanzar */
+    .mobile-launch-fab {
+      flex: 1;
+      max-width: 220px;
+      min-height: 44px;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      background: rgba(3, 7, 18, 0.94);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #38bdf8;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 16px rgba(56,189,248,0.25);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .mobile-launch-fab.active {
+      background: rgba(2, 132, 199, 0.35);
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+    }
+
+    /* Barra / Pestaña visible permanente con el texto exacto */
+    .mobile-bottom-bar {
+      width: 100%;
+      min-height: 48px;
+      padding: 10px 16px;
+      background: rgba(3, 7, 18, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(56, 189, 248, 0.35);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.85);
+    }
+    .mobile-bottom-bar-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mobile-bottom-bar-status {
+      font-size: 11px;
+      font-family: monospace;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Panel Desplegable (Glassmorphism Oscuro, cubre 40%-50% inferior) */
+    .mobile-sheet {
+      width: 100%;
+      height: 48vh;
+      max-height: 50vh;
+      background: rgba(3, 7, 18, 0.96);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid rgba(56, 189, 248, 0.45);
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.9);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.25s ease-out forwards;
+    }
+    .mobile-sheet.open {
+      display: flex;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .mobile-sheet-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.6);
+      cursor: pointer;
+    }
+    .mobile-sheet-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mobile-sheet-close {
+      min-height: 38px;
+      padding: 6px 14px;
+      border-radius: 10px;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #e0f2fe;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mobile-sheet-content {
+      flex: 1;
+      max-height: calc(50vh - 54px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .mobile-sheet-content::-webkit-scrollbar { width: 5px; }
+    .mobile-sheet-content::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.35);
+      border-radius: 4px;
+    }
+
+    details.accordion-section {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    details.accordion-section[open] {
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+    details.accordion-section summary {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #7dd3fc;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.4);
+      list-style: none;
+    }
+    details.accordion-section summary::-webkit-details-marker { display: none; }
+    details.accordion-section summary::after {
+      content: '▼';
+      font-size: 10px;
+      color: #94a3b8;
+      transition: transform 0.2s;
+    }
+    details.accordion-section[open] summary::after {
+      transform: rotate(180deg);
+      color: #38bdf8;
+    }
+    .accordion-body {
+      padding: 12px 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+
+    .body-pick-btn {
+      min-height: 46px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(15, 23, 42, 0.75);
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .body-pick-btn:hover {
+      border-color: #38bdf8;
+    }
+    .body-pick-btn.active {
+      background: rgba(2, 132, 199, 0.25);
+      border-color: #38bdf8;
+      color: #f0f9ff;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+    }
+    .body-pick-name {
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .body-pick-mass {
+      font-size: 10px;
+      font-family: monospace;
+      color: #94a3b8;
+    }
+
+    /* Desktop Sidebar */
+    .desktop-sidebar {
+      display: none;
+    }
+
+    @media (min-width: 769px) {
+      .mobile-controls-wrapper { display: none !important; }
+      .desktop-sidebar {
+        display: flex;
+        position: absolute;
+        top: 68px;
+        left: 12px;
+        bottom: 20px;
+        width: 340px;
+        z-index: 40;
+        flex-direction: column;
+        overflow-y: auto;
+        padding: 16px;
+        gap: 14px;
+      }
+      .desktop-sidebar::-webkit-scrollbar { width: 5px; }
+      .desktop-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(56, 189, 248, 0.3);
+        border-radius: 4px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      header {
+        top: 6px;
+        left: 6px;
+        right: 6px;
+        padding: 6px 10px;
+        gap: 6px;
+        flex-wrap: wrap;
+        max-width: calc(100vw - 12px);
+      }
+      .hud-formula {
+        display: none !important;
+      }
+      .hud-title {
+        font-size: 11px;
+      }
+      .header-left {
+        gap: 6px;
+      }
+      .camera-selector-box {
+        padding: 2px 5px;
+        gap: 4px;
+      }
+      .camera-selector-label {
+        font-size: 10px;
+      }
+      .camera-select-input {
+        font-size: 10px;
+        padding: 4px 6px;
+        min-height: 34px;
+      }
+      .btn-row {
+        gap: 4px;
+      }
+      .btn-sm {
+        min-height: 38px;
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+      #hud-telemetry {
+        top: 62px;
+        right: 6px;
+        width: 190px;
+        padding: 8px 12px;
+        font-size: 11px;
+      }
+      .mobile-quick-dock {
+        margin-bottom: 6px;
+        padding: 0 6px;
+        gap: 6px;
+      }
+      .quick-dock-btn {
+        min-height: 44px;
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+    }
+
+    #launch-toast {
+      position: absolute;
+      top: 68px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 16px;
+      background: rgba(2, 132, 199, 0.9);
+      border: 1px solid #38bdf8;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      z-index: 2000;
+      display: none;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+      pointer-events: none;
+    }
+  </style>
+
+  <!-- Bibliotecas Three.js, OrbitControls y GSAP vía CDN oficial -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body>
+  <div id="app-container">
+    <!-- Contenedor 3D WebGL -->
+    <div id="canvas-container"></div>
+
+    <!-- Toast de Feedback -->
+    <div id="launch-toast">¡Cuerpo lanzado a la órbita!</div>
+
+    <!-- Barra Superior con Selector de Cámaras 🎥 Vista -->
+    <header class="glass-panel">
+      <div class="header-left">
+        <div>
+          <div class="hud-title">✦ Curvatura Espaciotiempo</div>
+          <div class="hud-formula">y(x,z) = -Σ [ G·M_i / √(r_i² + ε²) ]</div>
+        </div>
+
+        <!-- 1. Selector Superior de Vistas de Cámara: "🎥 Vista" -->
+        <div class="camera-selector-box">
+          <label for="camera-view-select" class="camera-selector-label">🎥 Vista:</label>
+          <select id="camera-view-select" class="camera-select-input" title="Seleccionar vista de cámara con transición suave">
+            <option value="free">3D Libre</option>
+            <option value="top">Cenital (Superior)</option>
+            <option value="side">Lateral (Perfil)</option>
+            <option value="cinematic">Cinemática</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="btn-pause" class="btn btn-sm">⏸ Pausar</button>
+        <button id="btn-toggle-grid-top" class="btn btn-sm active" title="Alternar visibilidad del grid espaciotemporal (Grid On / Grid Off)">🌐 Grid On</button>
+        <button id="btn-audio" class="btn btn-sm" title="Activar/Silenciar sonido cósmico">🔇 Audio</button>
+        <button id="btn-clear" class="btn btn-sm btn-danger" title="Eliminar todos los cuerpos y aplanar el espaciotiempo">🗑️ Limpiar</button>
+      </div>
+    </header>
+
+    <!-- Ventana Superior Derecha de Telemetría -->
+    <div id="hud-telemetry" class="hud-metrics glass-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px;">
+        <span style="font-weight: 700; color: #38bdf8; font-size: 11px;">📊 TELEMETRÍA</span>
+        <button id="btn-close-hud" style="background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; padding: 2px 4px;">✕</button>
+      </div>
+      <div class="metric-item"><span>FPS:</span><span id="m-fps" class="metric-val">60</span></div>
+      <div class="metric-item"><span>Cuerpos:</span><span id="m-count" class="metric-val">0</span></div>
+      <div class="metric-item"><span>Energía:</span><span id="m-energy" class="metric-val">0 J</span></div>
+      <div class="metric-item"><span>Ondas LIGO:</span><span id="m-gw" class="metric-val" style="color: #f59e0b;">Reposo</span></div>
+    </div>
+
+    <!-- Desktop Sidebar -->
+    <aside class="desktop-sidebar glass-panel">
+      <!-- Sección Presets -->
+      <details open class="accordion-section">
+        <summary>🪐 Presets Gravitatorios</summary>
+        <div class="accordion-body grid-2">
+          <button class="btn btn-sm" onclick="loadPreset('kepler')">🌟 Órbita Elíptica</button>
+          <button class="btn btn-sm" onclick="loadPreset('binary')">🌀 Sistema Binario</button>
+          <button class="btn btn-sm" onclick="loadPreset('collapse')">🌌 Nebulosa</button>
+          <button class="btn btn-sm" onclick="loadPreset('threebody')">♾️ 3 Cuerpos</button>
+          <button class="btn btn-sm btn-danger" onclick="clearBodies()" style="grid-column: span 2; min-height: 40px; margin-top: 4px;">🗑️ Limpiar Escenario (Vaciar Grid)</button>
+        </div>
+      </details>
+
+      <!-- Sección Física & Malla -->
+      <details open class="accordion-section">
+        <summary>🔧 Física & Malla</summary>
+        <div class="accordion-body">
+          <div class="control-row">
+            <div class="control-label"><span>Constante G</span><span id="desk-val-g" class="control-value">1.0</span></div>
+            <input type="range" id="desk-slider-g" min="0.1" max="3.0" step="0.1" value="1.0">
+          </div>
+          <div class="control-row">
+            <div class="control-label"><span>Profundidad de la Malla</span><span id="desk-val-def" class="control-value">1.0x</span></div>
+            <input type="range" id="desk-slider-def" min="0.2" max="2.5" step="0.1" value="1.0">
+          </div>
+          <div class="control-row">
+            <div class="control-label"><span>Velocidad Temporal</span><span id="desk-val-spd" class="control-value">1.0x</span></div>
+            <input type="range" id="desk-slider-spd" min="0.1" max="2.5" step="0.1" value="1.0">
+          </div>
+          <div style="display: flex; gap: 6px; margin-top: 6px;">
+            <button id="desk-toggle-grid" class="btn btn-sm active" style="flex: 1;">🌐 Malla Visible</button>
+            <button id="desk-pulse-btn" class="btn btn-sm" style="flex: 1;">⚡ Pulso LIGO</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- Selector de Masa a Lanzar -->
+      <details open class="accordion-section">
+        <summary>🎯 Selector de Masa a Lanzar</summary>
+        <div class="accordion-body">
+          <div class="grid-2" style="margin-bottom: 8px;">
+            <div class="body-pick-btn" onclick="selectBodyType('star')" id="desk-pick-star">
+              <span class="body-pick-name">☀️ Sol</span>
+              <span class="body-pick-mass">1000u</span>
+            </div>
+            <div class="body-pick-btn active" onclick="selectBodyType('planet')" id="desk-pick-planet">
+              <span class="body-pick-name">🌍 Tierra</span>
+              <span class="body-pick-mass">20u</span>
+            </div>
+            <div class="body-pick-btn" onclick="selectBodyType('giant')" id="desk-pick-giant">
+              <span class="body-pick-name">🪐 Júpiter</span>
+              <span class="body-pick-mass">80u</span>
+            </div>
+            <div class="body-pick-btn" onclick="selectBodyType('blackhole')" id="desk-pick-blackhole">
+              <span class="body-pick-name">🕳️ Agujero N.</span>
+              <span class="body-pick-mass">2800u</span>
+            </div>
+            <div class="body-pick-btn" onclick="selectBodyType('asteroid')" id="desk-pick-asteroid" style="grid-column: span 2;">
+              <span class="body-pick-name">☄️ Asteroide / Luna</span>
+              <span class="body-pick-mass">0.5u</span>
+            </div>
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+            <input type="checkbox" id="desk-chk-fixed"> Masa estática (anclada fija)
+          </label>
+        </div>
+      </details>
+
+      <!-- Telemetría Toggle -->
+      <details class="accordion-section">
+        <summary>📊 Telemetría</summary>
+        <div class="accordion-body">
+          <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer;">
+            <span>Mostrar ventana superior</span>
+            <input type="checkbox" id="desk-chk-telemetry" checked>
+          </label>
+        </div>
+      </details>
+    </aside>
+
+    <!-- ========================================================= -->
+    <!-- PANEL INFERIOR DESPLEGABLE MÓVIL (BOTTOM SHEET) -->
+    <!-- ========================================================= -->
+    <div class="mobile-controls-wrapper">
+      <!-- Dock de Accesos Rápidos Móvil (Siempre Visible encima del panel inferior) -->
+      <div class="mobile-quick-dock">
+        <!-- 1. Botón Permanente de Visibilidad del Grid en Móvil -->
+        <button id="mob-grid-dock-btn" class="quick-dock-btn grid-btn active" title="Alternar visibilidad del grid espaciotemporal (Grid On / Grid Off)">
+          <span class="grid-icon">🌐</span>
+          <span id="mob-grid-dock-text" class="grid-text">Grid On</span>
+        </button>
+
+        <!-- 2. Botón Rápido Limpiar Escenario -->
+        <button id="mob-clear-dock-btn" class="quick-dock-btn clear-btn" title="Vaciar espacio, aplanar la malla y resetear telemetría">
+          <span>🗑️ Limpiar</span>
+        </button>
+
+        <!-- 3. Botón de Lanzar Cuerpo -->
+        <button id="mobile-launch-fab" class="mobile-launch-fab" title="Toca para apuntar y arrastrar en la pantalla 3D">
+          <span id="mobile-launch-fab-text">🎯 Lanzar: Tierra</span>
+        </button>
+      </div>
+
+      <!-- Barra Permanente "⚙️ Ajustes y Presets ▲" -->
+      <div id="mobile-toggle-bar" class="mobile-bottom-bar">
+        <div class="mobile-bottom-bar-title">
+          <span>⚙️ Ajustes y Presets ▲</span>
+        </div>
+        <div class="mobile-bottom-bar-status">
+          <span id="mobile-fps-badge">60 FPS</span>
+          <span style="color: #38bdf8; font-weight: 700;">Tocar para abrir</span>
+        </div>
+      </div>
+
+      <!-- Panel Desplegable (40%-50% inferior, Glassmorphism Oscuro, Scroll Táctil) -->
+      <div id="mobile-sheet" class="mobile-sheet">
+        <!-- Encabezado del Panel con botón "▼ Minimizar" -->
+        <div id="mobile-sheet-header" class="mobile-sheet-header">
+          <div class="mobile-sheet-title">
+            <span>⚙️ Ajustes y Presets</span>
+          </div>
+          <button id="mobile-close-btn" class="mobile-sheet-close">
+            <span>▼ Minimizar</span>
+          </button>
+        </div>
+
+        <!-- Contenido Desplegable (max-height: 50vh, scroll táctil) -->
+        <div class="mobile-sheet-content">
+          <!-- 1. 🪐 Presets -->
+          <details open class="accordion-section">
+            <summary>🪐 Presets</summary>
+            <div class="accordion-body grid-2">
+              <button class="btn btn-sm" onclick="loadPreset('kepler')">🌟 Órbita Elíptica</button>
+              <button class="btn btn-sm" onclick="loadPreset('binary')">🌀 Sistema Binario</button>
+              <button class="btn btn-sm" onclick="loadPreset('collapse')">🌌 Nebulosa</button>
+              <button class="btn btn-sm" onclick="loadPreset('threebody')">♾️ 3 Cuerpos</button>
+              <button class="btn btn-sm btn-danger" onclick="clearBodies()" style="grid-column: span 2; min-height: 44px; margin-top: 4px;">🗑️ Limpiar Escenario (Vaciar Grid)</button>
+            </div>
+          </details>
+
+          <!-- 2. 🔧 Física & Malla -->
+          <details open class="accordion-section">
+            <summary>🔧 Física & Malla</summary>
+            <div class="accordion-body">
+              <div class="control-row">
+                <div class="control-label"><span>Constante G</span><span id="mob-val-g" class="control-value">1.0</span></div>
+                <input type="range" id="mob-slider-g" min="0.1" max="3.0" step="0.1" value="1.0">
+              </div>
+              <div class="control-row">
+                <div class="control-label"><span>Escala de Profundidad de la Malla</span><span id="mob-val-def" class="control-value">1.0x</span></div>
+                <input type="range" id="mob-slider-def" min="0.2" max="2.5" step="0.1" value="1.0">
+              </div>
+              <div class="control-row">
+                <div class="control-label"><span>Velocidad Temporal</span><span id="mob-val-spd" class="control-value">1.0x</span></div>
+                <input type="range" id="mob-slider-spd" min="0.1" max="2.5" step="0.1" value="1.0">
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 6px;">
+                <button id="mob-toggle-grid" class="btn btn-sm active" style="flex: 1;">🌐 Malla Visible</button>
+                <button id="mob-pulse-btn" class="btn btn-sm" style="flex: 1;">⚡ Pulso LIGO</button>
+              </div>
+            </div>
+          </details>
+
+          <!-- 3. 🎯 Selector de Masa a Lanzar -->
+          <details open class="accordion-section">
+            <summary>🎯 Selector de Masa a Lanzar</summary>
+            <div class="accordion-body">
+              <div class="grid-2" style="margin-bottom: 8px;">
+                <div class="body-pick-btn" onclick="selectBodyType('star')" id="mob-pick-star">
+                  <span class="body-pick-name">☀️ Sol</span>
+                  <span class="body-pick-mass">1000u</span>
+                </div>
+                <div class="body-pick-btn active" onclick="selectBodyType('planet')" id="mob-pick-planet">
+                  <span class="body-pick-name">🌍 Tierra</span>
+                  <span class="body-pick-mass">20u</span>
+                </div>
+                <div class="body-pick-btn" onclick="selectBodyType('giant')" id="mob-pick-giant">
+                  <span class="body-pick-name">🪐 Júpiter</span>
+                  <span class="body-pick-mass">80u</span>
+                </div>
+                <div class="body-pick-btn" onclick="selectBodyType('blackhole')" id="mob-pick-blackhole">
+                  <span class="body-pick-name">🕳️ Agujero N.</span>
+                  <span class="body-pick-mass">2800u</span>
+                </div>
+                <div class="body-pick-btn" onclick="selectBodyType('asteroid')" id="mob-pick-asteroid" style="grid-column: span 2;">
+                  <span class="body-pick-name">☄️ Asteroide / Luna</span>
+                  <span class="body-pick-mass">0.5u</span>
+                </div>
+              </div>
+
+              <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer; padding: 6px 0;">
+                <span>Masa estática (fija sin movimiento)</span>
+                <input type="checkbox" id="mob-chk-fixed" style="width: 20px; height: 20px;">
+              </label>
+
+              <button
+                onclick="activateLauncherAndCloseSheet()"
+                class="btn"
+                style="width: 100%; margin-top: 8px; background: rgba(2, 132, 199, 0.35); border-color: #38bdf8; font-weight: 700;"
+              >
+                🎯 Lanzar Cuerpo Seleccionado (Arrastrar en 3D)
+              </button>
+            </div>
+          </details>
+
+          <!-- 4. 📊 Telemetría -->
+          <details open class="accordion-section">
+            <summary>📊 Telemetría</summary>
+            <div class="accordion-body">
+              <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer; padding: 6px 0;">
+                <span>Mostrar ventana superior</span>
+                <input type="checkbox" id="mob-chk-telemetry" checked style="width: 20px; height: 20px;">
+              </label>
+              <div class="grid-3" style="margin-top: 8px;">
+                <div style="background: rgba(15,23,42,0.6); padding: 8px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 10px; color: #94a3b8;">FPS</div>
+                  <div id="mob-sub-fps" style="font-weight: 700; color: #38bdf8; font-family: monospace;">60</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.6); padding: 8px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 10px; color: #94a3b8;">Cuerpos</div>
+                  <div id="mob-sub-count" style="font-weight: 700; color: #38bdf8; font-family: monospace;">0</div>
+                </div>
+                <div style="background: rgba(15,23,42,0.6); padding: 8px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 10px; color: #94a3b8;">LIGO</div>
+                  <div id="mob-sub-gw" style="font-weight: 700; color: #f59e0b; font-family: monospace;">Reposo</div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================= */
+    /* MOTOR THREE.JS CON SELECTOR DE CÁMARAS Y DEGRADADO RADIAL */
+    /* ========================================================= */
+    let scene, camera, renderer, controls;
+    let gridMesh, gridGeo, origCoords;
+    const N = 80, size = 130;
+    const vertexCount = ((N + 1) * N * 2) * 2;
+
+    let bodies = [];
+    let waveBursts = [];
+    let showGrid = true;
+    let isPaused = false;
+    let G = 1.0;
+    let deformationScale = 1.0;
+    let timeScale = 1.0;
+    const softening = 1.6;
+    let selectedType = 'planet';
+    let isFixedNew = false;
+    let isLauncherActive = true;
+
+    // Vistas de Cámara y Cinemática
+    let currentCameraView = 'free';
+    let isCinematic = false;
+    let cinematicAngle = 0;
+    let activeCameraTween = null;
+
+    // Interacción para lanzar cuerpos
+    let isAiming = false;
+    let aimStart = new THREE.Vector3();
+    let aimCurrent = new THREE.Vector3();
+    let arrowHelper, trajLine, planeMesh;
+    let raycaster, mouse;
+
+    // Web Audio API para audio cósmico
+    const cosmicAudio = {
+      ctx: null, masterGain: null, isEnabled: false,
+      init() {
+        if (this.ctx) return;
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContextClass();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+          this.masterGain.connect(this.ctx.destination);
+        } catch (e) {}
+      },
+      toggle() {
+        this.init();
+        if (!this.ctx) return false;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.isEnabled = !this.isEnabled;
+        if (this.masterGain) {
+          this.masterGain.gain.setTargetAtTime(this.isEnabled ? 0.35 : 0.0001, this.ctx.currentTime, 0.05);
+        }
+        return this.isEnabled;
+      },
+      playLaunch(speed = 1.0) {
+        if (!this.ctx || !this.isEnabled || !this.masterGain) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(380 + Math.min(speed * 30, 400), t + 0.3);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.36);
+      },
+      playCollision() {
+        if (!this.ctx || !this.isEnabled || !this.masterGain) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(95, t);
+        osc.frequency.exponentialRampToValueAtTime(32, t + 0.6);
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.65);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.66);
+      }
+    };
+
+    function init() {
+      const container = document.getElementById('canvas-container');
+      const w = window.innerWidth, h = window.innerHeight;
+
+      // 1. Escena & Cámara
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x020611);
+      scene.fog = new THREE.FogExp2(0x020611, 0.0035);
+
+      camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000);
+      camera.position.set(0, 50, 75);
+
+      // 2. Renderizador WebGL
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(w, h);
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      container.appendChild(renderer.domElement);
+
+      // 3. OrbitControls (1 dedo rota, 2 dedos zoom y paneo)
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.07;
+      controls.maxPolarAngle = Math.PI / 2 + 0.15;
+      controls.minDistance = 10;
+      controls.maxDistance = 260;
+      controls.target.set(0, -2, 0);
+
+      // 4. Luces
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambLight);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+      dirLight.position.set(40, 80, 50);
+      scene.add(dirLight);
+
+      // 5. Malla Deformable Espaciotiempo
+      createSpacetimeGrid();
+
+      // 6. Campo de Estrellas con degradado radial en memoria
+      createStarfield();
+
+      // 7. Raycaster y plano de intersección
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+      const pGeo = new THREE.PlaneGeometry(300, 300);
+      pGeo.rotateX(-Math.PI / 2);
+      planeMesh = new THREE.Mesh(pGeo, new THREE.MeshBasicMaterial({ visible: false }));
+      scene.add(planeMesh);
+
+      // Guía de lanzamiento y trayectoria
+      arrowHelper = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), 1, 0x38bdf8, 2.2, 1.4);
+      arrowHelper.visible = false;
+      scene.add(arrowHelper);
+
+      const tGeo = new THREE.BufferGeometry();
+      tGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(30 * 3), 3));
+      trajLine = new THREE.Line(tGeo, new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 }));
+      trajLine.visible = false;
+      scene.add(trajLine);
+
+      // 8. Eventos de ratón y táctiles
+      window.addEventListener('resize', onResize);
+      window.addEventListener('orientationchange', onResize);
+
+      const dom = renderer.domElement;
+      dom.addEventListener('pointerdown', onPointerDown);
+      dom.addEventListener('pointermove', onPointerMove);
+      dom.addEventListener('pointerup', onPointerUp);
+      dom.addEventListener('pointercancel', onPointerUp);
+
+      setupUI();
+      loadPreset('kepler');
+      animate();
+    }
+
+    // --- Malla Deformable del Espaciotiempo ---
+    function createSpacetimeGrid() {
+      const half = size / 2, step = size / N;
+      const positions = new Float32Array(vertexCount * 3);
+      const colors = new Float32Array(vertexCount * 3);
+      origCoords = new Float32Array(vertexCount * 2);
+
+      let idx = 0;
+      for (let i = 0; i <= N; i++) {
+        const x = -half + i * step;
+        for (let j = 0; j < N; j++) {
+          const z1 = -half + j * step, z2 = z1 + step;
+          origCoords[idx * 2] = x; origCoords[idx * 2 + 1] = z1;
+          positions[idx * 3] = x; positions[idx * 3 + 1] = 0; positions[idx * 3 + 2] = z1;
+          idx++;
+          origCoords[idx * 2] = x; origCoords[idx * 2 + 1] = z2;
+          positions[idx * 3] = x; positions[idx * 3 + 1] = 0; positions[idx * 3 + 2] = z2;
+          idx++;
+        }
+      }
+      for (let j = 0; j <= N; j++) {
+        const z = -half + j * step;
+        for (let i = 0; i < N; i++) {
+          const x1 = -half + i * step, x2 = x1 + step;
+          origCoords[idx * 2] = x1; origCoords[idx * 2 + 1] = z;
+          positions[idx * 3] = x1; positions[idx * 3 + 1] = 0; positions[idx * 3 + 2] = z;
+          idx++;
+          origCoords[idx * 2] = x2; origCoords[idx * 2 + 1] = z;
+          positions[idx * 3] = x2; positions[idx * 3 + 1] = 0; positions[idx * 3 + 2] = z;
+          idx++;
+        }
+      }
+
+      gridGeo = new THREE.BufferGeometry();
+      gridGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      gridGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const mat = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending
+      });
+      gridMesh = new THREE.LineSegments(gridGeo, mat);
+      scene.add(gridMesh);
+    }
+
+    // --- Textura Esférica Suave para Estrellas con Degradado Radial en Memoria ---
+    function createRadialStarTexture() {
+      const cv = document.createElement('canvas');
+      cv.width = 32;
+      cv.height = 32;
+      const ctx = cv.getContext('2d');
+      const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      grad.addColorStop(0.25, 'rgba(215, 238, 255, 0.9)');
+      grad.addColorStop(0.65, 'rgba(56, 189, 248, 0.35)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 32, 32);
+      return new THREE.CanvasTexture(cv);
+    }
+
+    function createStarfield() {
+      const pCount = 900;
+      const pos = new Float32Array(pCount * 3);
+      for (let i = 0; i < pCount; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 550;
+        pos[i * 3 + 1] = (Math.random() - 0.5) * 320 + 35;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 550;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+
+      const mat = new THREE.PointsMaterial({
+        size: 3.2,
+        map: createRadialStarTexture(),
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const stars = new THREE.Points(geo, mat);
+      scene.add(stars);
+    }
+
+    // --- Cálculo del Potencial Gravitatorio y Deformación ---
+    function calculatePotential(x, z) {
+      let y = 0;
+      for (let i = 0; i < bodies.length; i++) {
+        const b = bodies[i];
+        const dx = x - b.pos.x, dz = z - b.pos.z;
+        const dSq = dx * dx + dz * dz;
+        const epsSq = softening * softening;
+        y -= (G * b.mass * deformationScale * 0.052) / Math.sqrt(dSq + epsSq);
+      }
+      for (let i = 0; i < waveBursts.length; i++) {
+        const w = waveBursts[i];
+        const dx = x - w.x, dz = z - w.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const waveFront = dist - w.radius;
+        if (Math.abs(waveFront) < 14) {
+          y += Math.sin(waveFront * 0.7) * (w.amp / (dist * 0.18 + 1)) * Math.exp(-w.age * 0.8);
+        }
+      }
+      return y;
+    }
+
+    function updateGrid(dt) {
+      if (!gridGeo || !showGrid) return;
+      const pos = gridGeo.attributes.position.array;
+      const col = gridGeo.attributes.color.array;
+
+      for (let i = waveBursts.length - 1; i >= 0; i--) {
+        const w = waveBursts[i];
+        w.radius += 38 * dt;
+        w.age += dt;
+        w.amp *= Math.exp(-0.85 * dt);
+        if (w.age > 4.5 || w.amp < 0.02) waveBursts.splice(i, 1);
+      }
+
+      for (let i = 0; i < vertexCount; i++) {
+        const x = origCoords[i * 2], z = origCoords[i * 2 + 1];
+        const y = calculatePotential(x, z);
+        pos[i * 3 + 1] = y;
+
+        const depth = Math.min(Math.abs(y) * 0.09, 1.0);
+        col[i * 3]     = THREE.MathUtils.lerp(0.04, 0.95, depth);
+        col[i * 3 + 1] = THREE.MathUtils.lerp(0.65, 0.45, depth);
+        col[i * 3 + 2] = THREE.MathUtils.lerp(0.92, 0.15, depth);
+      }
+      gridGeo.attributes.position.needsUpdate = true;
+      gridGeo.attributes.color.needsUpdate = true;
+    }
+
+    // --- Cuerpos Celestes ---
+    function addBody(data) {
+      const group = new THREE.Group();
+      let sphereGeo = new THREE.SphereGeometry(data.radius, 24, 24);
+
+      if (data.type === 'blackhole') {
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const core = new THREE.Mesh(sphereGeo, coreMat);
+        group.add(core);
+
+        const diskGeo = new THREE.RingGeometry(data.radius * 1.3, data.radius * 2.8, 32);
+        diskGeo.rotateX(-Math.PI / 2);
+        const diskMat = new THREE.MeshBasicMaterial({ color: 0xc084fc, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+        group.add(new THREE.Mesh(diskGeo, diskMat));
+      } else {
+        const mat = new THREE.MeshStandardMaterial({
+          color: data.color,
+          roughness: data.type === 'star' ? 0.2 : 0.6,
+          metalness: 0.1,
+          emissive: data.type === 'star' ? data.color : 0x000000,
+          emissiveIntensity: data.type === 'star' ? 0.8 : 0.0
+        });
+        group.add(new THREE.Mesh(sphereGeo, mat));
+      }
+      scene.add(group);
+
+      const maxPts = 200;
+      const trailPos = new Float32Array(maxPts * 3);
+      const tGeo = new THREE.BufferGeometry();
+      tGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+      const trail = new THREE.Line(tGeo, new THREE.LineBasicMaterial({
+        color: data.color,
+        transparent: true,
+        opacity: 0.7
+      }));
+      scene.add(trail);
+
+      const obj = {
+        id: 'b_' + Date.now() + '_' + Math.random(),
+        name: data.name,
+        type: data.type,
+        mass: data.mass,
+        radius: data.radius,
+        color: data.color,
+        pos: new THREE.Vector3(data.pos.x, 0, data.pos.z),
+        vel: new THREE.Vector3(data.vel.x, 0, data.vel.z),
+        isFixed: !!data.isFixed,
+        mesh: group,
+        trail,
+        trailPos,
+        trailCount: 0,
+        lastTrail: new THREE.Vector3()
+      };
+      bodies.push(obj);
+      return obj;
+    }
+
+    function clearBodies() {
+      for (const b of bodies) {
+        scene.remove(b.mesh);
+        scene.remove(b.trail);
+        if (b.mesh && b.mesh.traverse) {
+          b.mesh.traverse((c) => {
+            if (c.geometry) c.geometry.dispose();
+          });
+        }
+        if (b.trail && b.trail.geometry) b.trail.geometry.dispose();
+      }
+      bodies = [];
+      waveBursts = [];
+
+      // Cancelar lanzamiento activo si estaba en curso
+      isAiming = false;
+      if (arrowHelper) arrowHelper.visible = false;
+      if (trajLine) trajLine.visible = false;
+      if (controls) controls.enabled = true;
+
+      // Restablecimiento de la Malla de forma inmediata a completamente plana (Y = 0)
+      if (gridGeo && origCoords) {
+        const pos = gridGeo.attributes.position.array;
+        const col = gridGeo.attributes.color.array;
+        for (let i = 0; i < vertexCount; i++) {
+          pos[i * 3 + 1] = 0;
+          col[i * 3]     = 0.04;
+          col[i * 3 + 1] = 0.65;
+          col[i * 3 + 2] = 0.92;
+        }
+        gridGeo.attributes.position.needsUpdate = true;
+        gridGeo.attributes.color.needsUpdate = true;
+      }
+
+      // Telemetría y Audio: resetear ventana de telemetría a ceros y silenciar tonos gravitatorios
+      const mCount = document.getElementById('m-count');
+      const mEnergy = document.getElementById('m-energy');
+      const mGw = document.getElementById('m-gw');
+      const mobCount = document.getElementById('mob-sub-count');
+      const mobGw = document.getElementById('mob-sub-gw');
+      if (mCount) mCount.innerText = '0';
+      if (mobCount) mobCount.innerText = '0';
+      if (mEnergy) mEnergy.innerText = '0 J';
+      if (mGw) mGw.innerText = 'Reposo';
+      if (mobGw) mobGw.innerText = 'Reposo';
+
+      showToast('🗑️ Escenario limpio: todos los cuerpos eliminados');
+    }
+
+    function triggerWave(x, z, amp = 3.5) {
+      waveBursts.push({ x, z, radius: 0, amp, age: 0 });
+    }
+
+    // --- Física Orbital ---
+    function stepPhysics(dt) {
+      if (isPaused || bodies.length === 0) return;
+      const sub = 6;
+      const sdt = (dt * timeScale) / sub;
+
+      for (let s = 0; s < sub; s++) {
+        const count = bodies.length;
+        for (let i = 0; i < count; i++) {
+          const bi = bodies[i];
+          if (bi.isFixed) continue;
+          for (let j = 0; j < count; j++) {
+            if (i === j) continue;
+            const bj = bodies[j];
+            const dx = bj.pos.x - bi.pos.x, dz = bj.pos.z - bi.pos.z;
+            const rSq = dx * dx + dz * dz + softening * softening;
+            const f = (G * bj.mass) / (rSq * Math.sqrt(rSq));
+            bi.vel.x += dx * f * sdt;
+            bi.vel.z += dz * f * sdt;
+          }
+        }
+        for (let i = 0; i < count; i++) {
+          const bi = bodies[i];
+          if (!bi.isFixed) {
+            bi.pos.x += bi.vel.x * sdt;
+            bi.pos.z += bi.vel.z * sdt;
+          }
+        }
+      }
+
+      // Fusión de Cuerpos al Colisionar
+      for (let i = 0; i < bodies.length; i++) {
+        for (let j = i + 1; j < bodies.length; j++) {
+          const b1 = bodies[i], b2 = bodies[j];
+          const dist = b1.pos.distanceTo(b2.pos);
+          if (dist < (b1.radius + b2.radius) * 0.85) {
+            const mTot = b1.mass + b2.mass;
+            const vX = (b1.vel.x * b1.mass + b2.vel.x * b2.mass) / mTot;
+            const vZ = (b1.vel.z * b1.mass + b2.vel.z * b2.mass) / mTot;
+
+            const keeper = b1.mass >= b2.mass ? b1 : b2;
+            const absorbed = b1.mass >= b2.mass ? b2 : b1;
+
+            keeper.mass = mTot;
+            keeper.vel.set(vX, 0, vZ);
+            keeper.radius = Math.max(keeper.radius, Math.cbrt(mTot) * 0.38);
+            keeper.mesh.scale.set(keeper.radius / 1.3, keeper.radius / 1.3, keeper.radius / 1.3);
+
+            triggerWave(keeper.pos.x, keeper.pos.z, Math.min(absorbed.mass * 0.12, 5.0));
+            cosmicAudio.playCollision();
+
+            scene.remove(absorbed.mesh);
+            scene.remove(absorbed.trail);
+            bodies = bodies.filter(b => b !== absorbed);
+            return;
+          }
+        }
+      }
+    }
+
+    // --- Centro de Masa del Sistema para la Cinemática ---
+    function getSystemCenterOfMass() {
+      const center = new THREE.Vector3(0, 0, 0);
+      let totalMass = 0;
+      if (bodies.length === 0) return { center, radius: 50 };
+
+      // Si hay un cuerpo supermasivo dominante (e.g. Sol o Agujero Negro), orbitar en torno a él
+      let heaviest = bodies[0];
+      for (const b of bodies) {
+        if (b.mass > heaviest.mass) heaviest = b;
+      }
+      if (heaviest && heaviest.mass > 400) {
+        center.set(heaviest.pos.x, calculatePotential(heaviest.pos.x, heaviest.pos.z), heaviest.pos.z);
+        return { center, radius: Math.max(38, Math.min(95, heaviest.radius * 12)) };
+      }
+
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      for (const b of bodies) {
+        center.add(b.pos.clone().multiplyScalar(b.mass));
+        totalMass += b.mass;
+        minX = Math.min(minX, b.pos.x); maxX = Math.max(maxX, b.pos.x);
+        minZ = Math.min(minZ, b.pos.z); maxZ = Math.max(maxZ, b.pos.z);
+      }
+      if (totalMass > 0) center.divideScalar(totalMass);
+      center.y = calculatePotential(center.x, center.z);
+      const spread = Math.sqrt((maxX - minX)**2 + (maxZ - minZ)**2);
+      const radius = Math.max(40, Math.min(125, spread * 1.35 + 26));
+      return { center, radius };
+    }
+
+    // --- 1. SELECTOR DE VISTAS DE CÁMARA CON INTERPOLACIÓN SUAVE (LERP) ---
+    function setCameraView(viewName) {
+      currentCameraView = viewName;
+      const sel = document.getElementById('camera-view-select');
+      if (sel && sel.value !== viewName) sel.value = viewName;
+
+      if (viewName === 'cinematic') {
+        isCinematic = true;
+        const { center, radius } = getSystemCenterOfMass();
+        const dx = camera.position.x - center.x;
+        const dz = camera.position.z - center.z;
+        cinematicAngle = Math.atan2(dz, dx);
+        const targetX = center.x + radius * Math.cos(cinematicAngle);
+        const targetZ = center.z + radius * Math.sin(cinematicAngle);
+        const targetY = center.y + radius * 0.45;
+
+        if (activeCameraTween) activeCameraTween.kill();
+        if (window.gsap) {
+          gsap.to(controls.target, { x: center.x, y: center.y, z: center.z, duration: 1.4, ease: 'power2.inOut' });
+          activeCameraTween = gsap.to(camera.position, {
+            x: targetX, y: targetY, z: targetZ, duration: 1.4, ease: 'power2.inOut',
+            onComplete: () => { activeCameraTween = null; }
+          });
+        }
+        showToast('🎥 Vista: Modo Cinemático Activo');
+        return;
+      }
+
+      isCinematic = false;
+      let targetPos = new THREE.Vector3(0, 50, 75);
+      let targetLook = new THREE.Vector3(0, -2, 0);
+
+      switch (viewName) {
+        case 'top':
+          // Cenital (Superior): vista perpendicular desde arriba mirando al plano XZ
+          targetPos.set(0, 95, 0.01);
+          targetLook.set(0, 0, 0);
+          showToast('🎥 Vista: Cenital (Superior)');
+          break;
+        case 'side':
+          // Lateral (Perfil): al horizonte de la cuadrícula
+          targetPos.set(0, 6, 88);
+          targetLook.set(0, -6, 0);
+          showToast('🎥 Vista: Lateral (Perfil)');
+          break;
+        case 'free':
+        default:
+          // 3D Libre: perspectiva isométrica elevada
+          targetPos.set(0, 50, 75);
+          targetLook.set(0, -2, 0);
+          showToast('🎥 Vista: 3D Libre');
+          break;
+      }
+
+      if (activeCameraTween) activeCameraTween.kill();
+      if (window.gsap) {
+        gsap.to(controls.target, {
+          x: targetLook.x, y: targetLook.y, z: targetLook.z,
+          duration: 1.4, ease: 'power2.inOut'
+        });
+        activeCameraTween = gsap.to(camera.position, {
+          x: targetPos.x, y: targetPos.y, z: targetPos.z,
+          duration: 1.4, ease: 'power2.inOut',
+          onComplete: () => { activeCameraTween = null; }
+        });
+      } else {
+        camera.position.copy(targetPos);
+        controls.target.copy(targetLook);
+      }
+    }
+
+    // --- Cargar Presets Gravitatorios ---
+    function loadPreset(name) {
+      clearBodies();
+      if (name === 'kepler') {
+        G = 1.0; deformationScale = 1.0;
+        addBody({ name: 'Sol', type: 'star', mass: 1000, radius: 3.2, color: 0xf59e0b, pos: { x: 0, z: 0 }, vel: { x: 0, z: 0 }, isFixed: true });
+        addBody({ name: 'Tierra', type: 'planet', mass: 18, radius: 1.3, color: 0x38bdf8, pos: { x: 30, z: 0 }, vel: { x: 0, z: 4.4 } });
+        addBody({ name: 'Luna', type: 'asteroid', mass: 1.5, radius: 0.65, color: 0xcbd5e1, pos: { x: 33.2, z: 0 }, vel: { x: 0, z: 6.2 } });
+        showToast('🪐 Preset: Órbita Elíptica');
+      } else if (name === 'binary') {
+        G = 1.0; deformationScale = 0.95;
+        addBody({ name: 'Estrella A', type: 'star', mass: 600, radius: 2.8, color: 0xf97316, pos: { x: -14, z: 0 }, vel: { x: 0, z: -3.3 } });
+        addBody({ name: 'Estrella B', type: 'star', mass: 600, radius: 2.8, color: 0x38bdf8, pos: { x: 14, z: 0 }, vel: { x: 0, z: 3.3 } });
+        showToast('🪐 Preset: Sistema Binario');
+      } else if (name === 'collapse') {
+        G = 1.2; deformationScale = 0.85;
+        addBody({ name: 'Sol Central', type: 'star', mass: 900, radius: 3.0, color: 0xfbbf24, pos: { x: 0, z: 0 }, vel: { x: 0, z: 0 }, isFixed: true });
+        for (let i = 0; i < 22; i++) {
+          const r = 14 + Math.sqrt(Math.random()) * 28;
+          const th = Math.random() * Math.PI * 2;
+          const spd = Math.sqrt(900 / (r + 4)) * (0.85 + Math.random() * 0.25);
+          addBody({
+            name: 'Partícula ' + (i + 1),
+            type: 'asteroid',
+            mass: 2 + Math.random() * 3,
+            radius: 0.55,
+            color: 0x94a3b8,
+            pos: { x: Math.cos(th) * r, z: Math.sin(th) * r },
+            vel: { x: -Math.sin(th) * spd, z: Math.cos(th) * spd }
+          });
+        }
+        showToast('🪐 Preset: Nebulosa');
+      } else if (name === 'threebody') {
+        G = 1.0; deformationScale = 0.9;
+        const scale = 22, vScale = 2.45;
+        const x1 = 0.97000436 * scale, z1 = -0.24308753 * scale;
+        const vx3 = 0.93240737 * vScale, vz3 = 0.86473146 * vScale;
+        addBody({ name: 'Cuerpo 1', type: 'star', mass: 350, radius: 2.2, color: 0xec4899, pos: { x: x1, z: z1 }, vel: { x: -vx3 / 2, z: -vz3 / 2 } });
+        addBody({ name: 'Cuerpo 2', type: 'star', mass: 350, radius: 2.2, color: 0x06b6d4, pos: { x: -x1, z: -z1 }, vel: { x: -vx3 / 2, z: -vz3 / 2 } });
+        addBody({ name: 'Cuerpo 3', type: 'star', mass: 350, radius: 2.2, color: 0xeab308, pos: { x: 0, z: 0 }, vel: { x: vx3, z: vz3 } });
+        showToast('🪐 Preset: 3 Cuerpos');
+      }
+      syncSlidersUI();
+    }
+
+    function syncSlidersUI() {
+      ['desk', 'mob'].forEach(p => {
+        const sg = document.getElementById(p + '-slider-g');
+        const vg = document.getElementById(p + '-val-g');
+        if (sg && vg) { sg.value = G; vg.innerText = G.toFixed(1); }
+
+        const sd = document.getElementById(p + '-slider-def');
+        const vd = document.getElementById(p + '-val-def');
+        if (sd && vd) { sd.value = deformationScale; vd.innerText = deformationScale.toFixed(1) + 'x'; }
+
+        const ss = document.getElementById(p + '-slider-spd');
+        const vs = document.getElementById(p + '-val-spd');
+        if (ss && vs) { ss.value = timeScale; vs.innerText = timeScale.toFixed(1) + 'x'; }
+      });
+    }
+
+    // --- Selector de Tipo de Masa a Lanzar ---
+    function selectBodyType(type) {
+      selectedType = type;
+      const allTypes = ['star', 'planet', 'giant', 'blackhole', 'asteroid'];
+      allTypes.forEach(t => {
+        const dBtn = document.getElementById('desk-pick-' + t);
+        const mBtn = document.getElementById('mob-pick-' + t);
+        if (dBtn) dBtn.classList.toggle('active', t === type);
+        if (mBtn) mBtn.classList.toggle('active', t === type);
+      });
+
+      const labelNames = { star: 'Sol', planet: 'Tierra', giant: 'Júpiter', blackhole: 'Agujero N.', asteroid: 'Asteroide' };
+      const fab = document.getElementById('mobile-launch-fab');
+      if (fab) {
+        fab.innerHTML = \`<span id="mobile-launch-fab-text">🎯 Lanzar: \${labelNames[type]}</span>\`;
+      }
+    }
+
+    function activateLauncherAndCloseSheet() {
+      isLauncherActive = true;
+      const sheet = document.getElementById('mobile-sheet');
+      const bar = document.getElementById('mobile-toggle-bar');
+      if (sheet) sheet.classList.remove('open');
+      if (bar) bar.style.display = 'flex';
+      showToast('🎯 Arrastra en la pantalla para apuntar y lanzar');
+    }
+
+    // --- Eventos Táctiles / Puntero para Lanzamiento 3D ---
+    function getIntersect(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObject(planeMesh);
+      return hits.length > 0 ? hits[0].point : null;
+    }
+
+    function onPointerDown(e) {
+      if (!isLauncherActive || e.button === 2) return;
+      const pt = getIntersect(e);
+      if (pt) {
+        isAiming = true;
+        aimStart.copy(pt);
+        aimCurrent.copy(pt);
+        controls.enabled = false;
+        arrowHelper.position.set(pt.x, 0.5, pt.z);
+        arrowHelper.visible = true;
+        trajLine.visible = true;
+      }
+    }
+
+    function onPointerMove(e) {
+      if (!isAiming) return;
+      const pt = getIntersect(e);
+      if (pt) {
+        aimCurrent.copy(pt);
+        const diff = new THREE.Vector3().subVectors(aimCurrent, aimStart);
+        const len = diff.length();
+        if (len > 0.1) {
+          arrowHelper.setDirection(diff.clone().normalize());
+          arrowHelper.setLength(Math.min(len * 0.9, 25), 2.2, 1.4);
+
+          const pos = trajLine.geometry.attributes.position.array;
+          let simX = aimStart.x, simZ = aimStart.z;
+          const vx = diff.x * 0.28, vz = diff.z * 0.28;
+          for (let i = 0; i < 30; i++) {
+            pos[i * 3] = simX;
+            pos[i * 3 + 1] = calculatePotential(simX, simZ) + 0.5;
+            pos[i * 3 + 2] = simZ;
+            simX += vx * 0.12;
+            simZ += vz * 0.12;
+          }
+          trajLine.geometry.attributes.position.needsUpdate = true;
+        }
+      }
+    }
+
+    function onPointerUp(e) {
+      if (!isAiming) return;
+      isAiming = false;
+      controls.enabled = true;
+      arrowHelper.visible = false;
+      trajLine.visible = false;
+
+      const diff = new THREE.Vector3().subVectors(aimCurrent, aimStart);
+      const vel = diff.multiplyScalar(0.28);
+
+      let m = 18, r = 1.3, col = 0x38bdf8, name = 'Tierra';
+      if (selectedType === 'star') { m = 1000; r = 3.2; col = 0xf59e0b; name = 'Sol'; }
+      else if (selectedType === 'giant') { m = 80; r = 2.2; col = 0x6366f1; name = 'Júpiter'; }
+      else if (selectedType === 'blackhole') { m = 2800; r = 3.0; col = 0x000000; name = 'Agujero N.'; }
+      else if (selectedType === 'asteroid') { m = 1.0; r = 0.55; col = 0x94a3b8; name = 'Asteroide'; }
+
+      addBody({
+        name: name + ' ' + (bodies.length + 1),
+        type: selectedType,
+        mass: m,
+        radius: r,
+        color: col,
+        pos: { x: aimStart.x, z: aimStart.z },
+        vel: { x: vel.x, z: vel.z },
+        isFixed: isFixedNew
+      });
+
+      cosmicAudio.playLaunch(vel.length());
+      showToast('¡Cuerpo ' + name + ' lanzado!');
+    }
+
+    function onResize() {
+      if (!camera || !renderer) return;
+      const w = window.innerWidth, h = window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('launch-toast');
+      if (toast) {
+        toast.innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2200);
+      }
+    }
+
+    function toggleGridVisibility() {
+      showGrid = !showGrid;
+      if (gridMesh) gridMesh.visible = showGrid;
+      const topBtn = document.getElementById('btn-toggle-grid-top');
+      const deskBtn = document.getElementById('desk-toggle-grid');
+      const mobBtn = document.getElementById('mob-toggle-grid');
+      const dockBtn = document.getElementById('mob-grid-dock-btn');
+
+      if (topBtn) {
+        topBtn.innerText = showGrid ? '🌐 Grid On' : '🌐 Grid Off';
+        topBtn.classList.toggle('active', showGrid);
+        topBtn.classList.toggle('inactive', !showGrid);
+      }
+      if (dockBtn) {
+        const txt = dockBtn.querySelector('.grid-text');
+        if (txt) txt.innerText = showGrid ? 'Grid On' : 'Grid Off';
+        dockBtn.classList.toggle('active', showGrid);
+        dockBtn.classList.toggle('inactive', !showGrid);
+      }
+      if (deskBtn) {
+        deskBtn.innerText = showGrid ? '🌐 Grid On (Malla Visible)' : '🌐 Grid Off (Malla Oculta)';
+        deskBtn.classList.toggle('active', showGrid);
+        deskBtn.classList.toggle('inactive', !showGrid);
+      }
+      if (mobBtn) {
+        mobBtn.innerText = showGrid ? '🌐 Grid On (Malla Visible)' : '🌐 Grid Off (Malla Oculta)';
+        mobBtn.classList.toggle('active', showGrid);
+        mobBtn.classList.toggle('inactive', !showGrid);
+      }
+
+      showToast(showGrid ? '🌐 Malla espaciotemporal activada (Grid On)' : '🌐 Malla espaciotemporal oculta (Grid Off)');
+    }
+
+    // --- Configuración de Interfaz ---
+    function setupUI() {
+      // 1. Selector Superior de Cámaras
+      const cameraSelect = document.getElementById('camera-view-select');
+      if (cameraSelect) {
+        cameraSelect.onchange = (e) => setCameraView(e.target.value);
+      }
+
+      // Botón Pausa
+      document.getElementById('btn-pause').onclick = function() {
+        isPaused = !isPaused;
+        this.innerText = isPaused ? '▶ Reanudar' : '⏸ Pausar';
+      };
+
+      // Botón Visibilidad Malla Superior
+      document.getElementById('btn-toggle-grid-top').onclick = toggleGridVisibility;
+
+      // Botón Limpiar
+      document.getElementById('btn-clear').onclick = clearBodies;
+
+      // Botón Audio Cósmico
+      document.getElementById('btn-audio').onclick = function() {
+        const on = cosmicAudio.toggle();
+        this.innerText = on ? '🔊 Audio ON' : '🔇 Audio';
+        this.classList.toggle('active', on);
+      };
+
+      // Dock de Accesos Rápidos Móvil
+      const dockGridBtn = document.getElementById('mob-grid-dock-btn');
+      if (dockGridBtn) dockGridBtn.onclick = toggleGridVisibility;
+
+      const dockClearBtn = document.getElementById('mob-clear-dock-btn');
+      if (dockClearBtn) dockClearBtn.onclick = clearBodies;
+
+      // HUD Telemetría Superior
+      const hud = document.getElementById('hud-telemetry');
+      document.getElementById('btn-close-hud').onclick = () => {
+        hud.style.display = 'none';
+        document.getElementById('desk-chk-telemetry').checked = false;
+        document.getElementById('mob-chk-telemetry').checked = false;
+      };
+
+      document.getElementById('desk-chk-telemetry').onchange = (e) => {
+        hud.style.display = e.target.checked ? 'flex' : 'none';
+        document.getElementById('mob-chk-telemetry').checked = e.target.checked;
+      };
+
+      document.getElementById('mob-chk-telemetry').onchange = (e) => {
+        hud.style.display = e.target.checked ? 'flex' : 'none';
+        document.getElementById('desk-chk-telemetry').checked = e.target.checked;
+      };
+
+      // ==========================================
+      // PANEL INFERIOR MÓVIL (BOTTOM SHEET)
+      // ==========================================
+      const mobileBar = document.getElementById('mobile-toggle-bar');
+      const mobileSheet = document.getElementById('mobile-sheet');
+      const mobileClose = document.getElementById('mobile-close-btn');
+      const mobileSheetHeader = document.getElementById('mobile-sheet-header');
+
+      function openBottomSheet() {
+        mobileSheet.classList.add('open');
+        mobileBar.style.display = 'none';
+      }
+
+      function closeBottomSheet() {
+        mobileSheet.classList.remove('open');
+        mobileBar.style.display = 'flex';
+      }
+
+      mobileBar.onclick = openBottomSheet;
+      mobileClose.onclick = (e) => { e.stopPropagation(); closeBottomSheet(); };
+      mobileSheetHeader.onclick = closeBottomSheet;
+
+      const fab = document.getElementById('mobile-launch-fab');
+      fab.onclick = () => {
+        isLauncherActive = true;
+        showToast('Arrastra en la pantalla para apuntar y lanzar');
+      };
+
+      ['desk', 'mob'].forEach(p => {
+        const sg = document.getElementById(p + '-slider-g');
+        if (sg) sg.oninput = (e) => { G = parseFloat(e.target.value); syncSlidersUI(); };
+
+        const sd = document.getElementById(p + '-slider-def');
+        if (sd) sd.oninput = (e) => { deformationScale = parseFloat(e.target.value); syncSlidersUI(); };
+
+        const ss = document.getElementById(p + '-slider-spd');
+        if (ss) ss.oninput = (e) => { timeScale = parseFloat(e.target.value); syncSlidersUI(); };
+
+        const tg = document.getElementById(p + '-toggle-grid');
+        if (tg) tg.onclick = toggleGridVisibility;
+
+        const pb = document.getElementById(p + '-pulse-btn');
+        if (pb) {
+          pb.onclick = () => {
+            triggerWave(0, 0, 4.5);
+            cosmicAudio.playCollision();
+            showToast('⚡ Pulso Gravitacional emitido');
+          };
+        }
+
+        const cf = document.getElementById(p + '-chk-fixed');
+        if (cf) {
+          cf.onchange = (e) => {
+            isFixedNew = e.target.checked;
+            document.getElementById('desk-chk-fixed').checked = isFixedNew;
+            document.getElementById('mob-chk-fixed').checked = isFixedNew;
+          };
+        }
+      });
+    }
+
+    let lastT = performance.now();
+    let frameCnt = 0, fpsT = performance.now();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const now = performance.now();
+      const dt = Math.min((now - lastT) / 1000, 0.05);
+      lastT = now;
+
+      frameCnt++;
+      if (now - fpsT >= 500) {
+        const fps = Math.round((frameCnt * 1000) / (now - fpsT));
+        document.getElementById('m-fps').innerText = fps;
+        document.getElementById('mobile-fps-badge').innerText = fps + ' FPS';
+        document.getElementById('mob-sub-fps').innerText = fps;
+        frameCnt = 0; fpsT = now;
+      }
+
+      stepPhysics(dt);
+      updateGrid(dt);
+
+      // Interpolación suave y órbita lenta en Modo Cinemático
+      if (isCinematic) {
+        cinematicAngle += 0.22 * dt;
+        const { center, radius } = getSystemCenterOfMass();
+        const altitude = center.y + radius * (0.42 + 0.12 * Math.sin(cinematicAngle * 0.7));
+        const targetCamX = center.x + radius * Math.cos(cinematicAngle);
+        const targetCamZ = center.z + radius * Math.sin(cinematicAngle);
+
+        if (!activeCameraTween) {
+          camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
+          camera.position.y = THREE.MathUtils.lerp(camera.position.y, altitude, 0.05);
+          camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.05);
+          controls.target.lerp(center, 0.06);
+        } else {
+          controls.target.lerp(center, 0.04);
+        }
+      }
+
+      let kinetic = 0, pot = 0;
+      for (let i = 0; i < bodies.length; i++) {
+        const b = bodies[i];
+        const y = calculatePotential(b.pos.x, b.pos.z);
+        b.mesh.position.set(b.pos.x, y, b.pos.z);
+        b.mesh.rotation.y += 0.01;
+
+        kinetic += 0.5 * b.mass * b.vel.lengthSq();
+        for (let j = i + 1; j < bodies.length; j++) {
+          const bj = bodies[j];
+          pot -= (G * b.mass * bj.mass) / (b.pos.distanceTo(bj.pos) + softening);
+        }
+
+        if (b.pos.distanceTo(b.lastTrail) > 0.4) {
+          b.lastTrail.copy(b.pos);
+          const pos = b.trailPos;
+          if (b.trailCount < 200) {
+            pos[b.trailCount * 3] = b.pos.x;
+            pos[b.trailCount * 3 + 1] = y;
+            pos[b.trailCount * 3 + 2] = b.pos.z;
+            b.trailCount++;
+          } else {
+            pos.copyWithin(0, 3, 200 * 3);
+            pos[199 * 3] = b.pos.x;
+            pos[199 * 3 + 1] = y;
+            pos[199 * 3 + 2] = b.pos.z;
+          }
+          b.trail.geometry.attributes.position.needsUpdate = true;
+          b.trail.geometry.setDrawRange(0, b.trailCount);
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+
+      document.getElementById('m-count').innerText = bodies.length;
+      document.getElementById('mob-sub-count').innerText = bodies.length;
+      document.getElementById('m-energy').innerText = Math.round(kinetic + pot).toLocaleString() + ' J';
+
+      const isWaveActive = waveBursts.length > 0;
+      document.getElementById('m-gw').innerText = isWaveActive ? 'ONDAS GW' : 'Reposo';
+      document.getElementById('mob-sub-gw').innerText = isWaveActive ? 'ONDAS GW' : 'Reposo';
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
+`;
+}

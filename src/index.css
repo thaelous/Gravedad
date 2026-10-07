@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+html, body, #root {
+  height: 100dvh;
+  min-height: 100dvh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}

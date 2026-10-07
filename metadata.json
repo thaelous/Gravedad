@@ -1,0 +1,8 @@
+{
+  "name": "Remix Curvatura del Espaciotiempo y Gravedad N-Cuerpos",
+  "description": "Simulación interactiva 3D de la curvatura del espaciotiempo según la Relatividad General y gravitación newtoniana de N-cuerpos con Three.js.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
