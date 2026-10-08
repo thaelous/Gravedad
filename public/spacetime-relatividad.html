@@ -732,6 +732,7 @@
         <summary>🪐 Presets Gravitatorios</summary>
         <div class="accordion-body grid-2">
           <button class="btn btn-sm" onclick="loadPreset('earth_moon')" style="grid-column: span 2; border-color: #38bdf8; background: rgba(2, 132, 199, 0.28); color: #e0f2fe; font-weight: 700; min-height: 40px; box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);">🌍 Tierra y Luna (Órbita Jerárquica)</button>
+          <button class="btn btn-sm" onclick="loadPreset('relativity_mercury')" style="grid-column: span 2; border-color: #a78bfa; background: rgba(139, 92, 246, 0.25); color: #f5f3ff; font-weight: 700; min-height: 40px;">🪐 Precesión Relativista 1PN (Mercurio)</button>
           <button class="btn btn-sm" onclick="loadPreset('kepler')">🌟 Órbita Elíptica</button>
           <button class="btn btn-sm" onclick="loadPreset('binary')">🌀 Sistema Binario</button>
           <button class="btn btn-sm" onclick="loadPreset('collapse')">🌌 Nebulosa</button>
@@ -740,10 +741,21 @@
         </div>
       </details>
 
-      <!-- Sección Física & Malla -->
+      <!-- Sección Física Relativista & Malla -->
       <details open class="accordion-section">
-        <summary>🔧 Física & Malla</summary>
+        <summary>🔧 Física Relativista & Malla</summary>
         <div class="accordion-body">
+          <label style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; cursor: pointer; padding: 4px 0; color: #a78bfa; font-weight: 600;">
+            <span title="Activa la corrección post-newtoniana 1PN de la Relatividad General">⚡ Efectos Relativistas (1PN)</span>
+            <input type="checkbox" id="desk-chk-rel" checked style="width: 16px; height: 16px;">
+          </label>
+          <div class="control-row" id="desk-row-c" style="margin-top: 4px;">
+            <div class="control-label"><span>Velocidad de la luz (c)</span><span id="desk-val-c" class="control-value" style="color: #a78bfa;">42 u/s</span></div>
+            <input type="range" id="desk-slider-c" min="15" max="120" step="1" value="42">
+          </div>
+          <div style="font-size: 10px; color: #94a3b8; line-height: 1.3; margin-bottom: 6px; padding: 4px 6px; background: rgba(167, 139, 250, 0.08); border-radius: 6px; border-left: 2px solid #a78bfa;">
+            Geodésicas Schwarzschild: produce precesión del perihelio (roseta orbital). Disminuye <em>c</em> para exagerar el efecto.
+          </div>
           <div class="control-row">
             <div class="control-label"><span>Constante G</span><span id="desk-val-g" class="control-value">1.0</span></div>
             <input type="range" id="desk-slider-g" min="0.1" max="3.0" step="0.1" value="1.0">
@@ -864,6 +876,7 @@
             <summary>🪐 Presets</summary>
             <div class="accordion-body grid-2">
               <button class="btn btn-sm" onclick="loadPreset('earth_moon')" style="grid-column: span 2; border-color: #38bdf8; background: rgba(2, 132, 199, 0.28); color: #e0f2fe; font-weight: 700; min-height: 44px; box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);">🌍 Tierra y Luna (Órbita Jerárquica)</button>
+              <button class="btn btn-sm" onclick="loadPreset('relativity_mercury')" style="grid-column: span 2; border-color: #a78bfa; background: rgba(139, 92, 246, 0.25); color: #f5f3ff; font-weight: 700; min-height: 44px;">🪐 Precesión Relativista 1PN (Mercurio)</button>
               <button class="btn btn-sm" onclick="loadPreset('kepler')">🌟 Órbita Elíptica</button>
               <button class="btn btn-sm" onclick="loadPreset('binary')">🌀 Sistema Binario</button>
               <button class="btn btn-sm" onclick="loadPreset('collapse')">🌌 Nebulosa</button>
@@ -872,10 +885,21 @@
             </div>
           </details>
 
-          <!-- 2. 🔧 Física & Malla -->
+          <!-- 2. 🔧 Física Relativista & Malla -->
           <details open class="accordion-section">
-            <summary>🔧 Física & Malla</summary>
+            <summary>🔧 Física Relativista & Malla</summary>
             <div class="accordion-body">
+              <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer; padding: 6px 0; color: #a78bfa; font-weight: 600;">
+                <span title="Activa la corrección post-newtoniana 1PN de la Relatividad General">⚡ Efectos Relativistas (1PN / Covariante)</span>
+                <input type="checkbox" id="mob-chk-rel" checked style="width: 20px; height: 20px;">
+              </label>
+              <div class="control-row" id="mob-row-c">
+                <div class="control-label"><span>Velocidad de la luz (c)</span><span id="mob-val-c" class="control-value" style="color: #a78bfa;">42 u/s</span></div>
+                <input type="range" id="mob-slider-c" min="15" max="120" step="1" value="42">
+              </div>
+              <div style="font-size: 11px; color: #94a3b8; line-height: 1.3; margin-bottom: 6px; padding: 4px 6px; background: rgba(167, 139, 250, 0.08); border-radius: 6px; border-left: 2px solid #a78bfa;">
+                Simula geodésicas post-newtonianas y la precesión del perihelio de Mercurio.
+              </div>
               <div class="control-row">
                 <div class="control-label"><span>Constante G</span><span id="mob-val-g" class="control-value">1.0</span></div>
                 <input type="range" id="mob-slider-g" min="0.1" max="3.0" step="0.1" value="1.0">
@@ -987,6 +1011,8 @@
     let G = 1.0;
     let deformationScale = 1.0;
     let timeScale = 1.0;
+    let relativisticEnabled = true;
+    let speedOfLight = 42; // c - Constante relativista / Velocidad de la luz para corrección 1PN
     const softening = 0.45; // Softening optimizado para permitir pozos de gravedad anidados y lunas estables
     let satelliteAssist = true;
     let selectedType = 'planet';
@@ -1006,9 +1032,11 @@
     let arrowHelper, trajLine, planeMesh;
     let raycaster, mouse;
 
-    // Web Audio API para audio cósmico
+    // Web Audio API para audio cósmico, drone de espaciotiempo y pulso armónico al perihelio
     const cosmicAudio = {
       ctx: null, masterGain: null, isEnabled: false,
+      droneOsc: null, droneGain: null, droneFilter: null,
+      lastPerihelionTime: 0,
       init() {
         if (this.ctx) return;
         try {
@@ -1017,6 +1045,23 @@
           this.masterGain = this.ctx.createGain();
           this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
           this.masterGain.connect(this.ctx.destination);
+
+          // Drone continuo de curvatura de espaciotiempo modulado por la masa total
+          this.droneFilter = this.ctx.createBiquadFilter();
+          this.droneFilter.type = 'lowpass';
+          this.droneFilter.frequency.setValueAtTime(80, this.ctx.currentTime);
+
+          this.droneGain = this.ctx.createGain();
+          this.droneGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+
+          this.droneOsc = this.ctx.createOscillator();
+          this.droneOsc.type = 'sawtooth';
+          this.droneOsc.frequency.setValueAtTime(42, this.ctx.currentTime);
+
+          this.droneOsc.connect(this.droneFilter);
+          this.droneFilter.connect(this.droneGain);
+          this.droneGain.connect(this.masterGain);
+          this.droneOsc.start();
         } catch (e) {}
       },
       toggle() {
@@ -1027,7 +1072,36 @@
         if (this.masterGain) {
           this.masterGain.gain.setTargetAtTime(this.isEnabled ? 0.35 : 0.0001, this.ctx.currentTime, 0.05);
         }
+        if (this.droneGain) {
+          this.droneGain.gain.setTargetAtTime(this.isEnabled ? 0.07 : 0.0001, this.ctx.currentTime, 0.1);
+        }
         return this.isEnabled;
+      },
+      updateDrone(totalMass) {
+        if (!this.ctx || !this.isEnabled || !this.droneOsc) return;
+        const targetFreq = 38 + Math.min(Math.sqrt(totalMass) * 1.6, 95);
+        const targetCutoff = 70 + Math.min(Math.sqrt(totalMass) * 4.2, 380);
+        this.droneOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.2);
+        this.droneFilter.frequency.setTargetAtTime(targetCutoff, this.ctx.currentTime, 0.2);
+      },
+      playPerihelionPulse(ratio = 1.0) {
+        if (!this.ctx || !this.isEnabled || !this.masterGain) return;
+        const now = performance.now();
+        if (now - this.lastPerihelionTime < 320) return; // Evitar saturación acústica
+        this.lastPerihelionTime = now;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const baseFreq = 528 * Math.max(0.65, Math.min(1.4, ratio));
+        osc.frequency.setValueAtTime(baseFreq, t);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, t + 0.16);
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.39);
       },
       playLaunch(speed = 1.0) {
         if (!this.ctx || !this.isEnabled || !this.masterGain) return;
@@ -1323,7 +1397,9 @@
         trail,
         trailPos,
         trailCount: 0,
-        lastTrail: new THREE.Vector3()
+        lastTrail: new THREE.Vector3(),
+        prevDistToPrimary: null,
+        wasApproaching: false
       };
       bodies.push(obj);
       return obj;
@@ -1382,15 +1458,19 @@
       waveBursts.push({ x, z, radius: 0, amp, age: 0 });
     }
 
-    // --- Física Orbital: Gravedad Mutua Completa N-Cuerpos (F_ij = G * mi * mj / (r^2 + eps^2)) ---
+    // --- Física Orbital: Gravedad Mutua Completa N-Cuerpos con Dinámica Relativista 1PN ---
+    // En RG: Ecuación de geodésicas (aceleración covariante nula) D u^mu / d tau = 0
+    // Corrección Post-Newtoniana (1PN Schwarzschild / Métrica Efectiva):
+    // a_rel = a_newton * [ 1 + (3 * G * M) / (r * c^2) + (3 * L^2) / (r^2 * c^2) ]
     function stepPhysics(dt) {
       if (isPaused || bodies.length === 0) return;
-      const sub = 8; // 8 subpasos por fotograma para garantizar estabilidad orbital en sistemas jerárquicos (Lunas/Satélites)
+      const sub = 8; // 8 subpasos por fotograma para estabilidad orbital rigurosa
       const sdt = (dt * timeScale) / sub;
+      const cSq = speedOfLight * speedOfLight;
 
       for (let s = 0; s < sub; s++) {
         const count = bodies.length;
-        // 1. Cálculo de fuerzas gravitacionales mutuas bidireccionales (N x N)
+        // 1. Cálculo de fuerzas gravitacionales mutuas bidireccionales (N x N) con corrección 1PN
         for (let i = 0; i < count; i++) {
           const bi = bodies[i];
           if (bi.isFixed) continue;
@@ -1400,8 +1480,22 @@
             const dx = bj.pos.x - bi.pos.x, dz = bj.pos.z - bi.pos.z;
             const rSq = dx * dx + dz * dz + softening * softening;
             const dist = Math.sqrt(rSq);
-            // Fuerza universal recíproca: a_i += G * m_j / r^2 en dirección (dx, dz)
-            const f = (G * bj.mass) / (rSq * dist);
+
+            // Fuerza newtoniana base F_ij = G * mi * mj / (r^2 + eps^2)
+            let f = (G * bj.mass) / (rSq * dist);
+
+            // Dinámica Relativista 1PN (Geodésicas Schwarzschild / Aceleración Covariante):
+            // a_rel = a_newton * [ 1 + (3 * G * M) / (r * c^2) + (3 * L^2) / (r^2 * c^2) ]
+            if (relativisticEnabled && cSq > 0) {
+              const dvx = bi.vel.x - bj.vel.x;
+              const dvz = bi.vel.z - bj.vel.z;
+              const L = Math.abs(dx * dvz - dz * dvx); // Momento angular específico L = |r x v|
+              const potTerm = (3 * G * bj.mass) / (dist * cSq);
+              const LTerm = (3 * L * L) / (rSq * cSq);
+              const relFactor = 1 + potTerm + LTerm;
+              f *= relFactor;
+            }
+
             bi.vel.x += dx * f * sdt;
             bi.vel.z += dz * f * sdt;
           }
@@ -1413,6 +1507,29 @@
             bi.pos.x += bi.vel.x * sdt;
             bi.pos.z += bi.vel.z * sdt;
           }
+        }
+      }
+
+      // Detección de perihelio para cuerpos en órbita excéntrica (pulso armónico al perihelio)
+      if (bodies.length >= 2) {
+        let primary = bodies[0];
+        for (let i = 1; i < bodies.length; i++) {
+          if (bodies[i].mass > primary.mass) primary = bodies[i];
+        }
+        for (let i = 0; i < bodies.length; i++) {
+          const b = bodies[i];
+          if (b === primary || b.isFixed) continue;
+          const curDist = b.pos.distanceTo(primary.pos);
+          if (b.prevDistToPrimary !== null) {
+            const isApproaching = curDist < b.prevDistToPrimary;
+            // Cruce del perihelio: estaba aproximándose y ahora empieza a alejarse
+            if (b.wasApproaching && !isApproaching && curDist < 35) {
+              cosmicAudio.playPerihelionPulse(16 / Math.max(curDist, 5));
+              triggerWave(b.pos.x, b.pos.z, 0.75);
+            }
+            b.wasApproaching = isApproaching;
+          }
+          b.prevDistToPrimary = curDist;
         }
       }
 
@@ -1574,6 +1691,15 @@
           vel: { x: 0, z: vTierra + vLocal }
         });
         showToast('🌍 Preset: Sol + Tierra + Luna (Órbita Jerárquica)');
+      } else if (name === 'relativity_mercury') {
+        G = 1.0; deformationScale = 1.0;
+        relativisticEnabled = true;
+        speedOfLight = 38; // c ajustada para observar claramente la precesión del perihelio
+        // 1. Núcleo denso / Sol relativista masivo
+        addBody({ name: 'Núcleo Masivo', type: 'star', mass: 1400, radius: 3.4, color: 0xf59e0b, pos: { x: 0, z: 0 }, vel: { x: 0, z: 0 }, isFixed: true });
+        // 2. Mercurio en órbita excéntrica cerrada: r0 = 18, vel = 7.2 (elipse con avance de perihelio)
+        addBody({ name: 'Mercurio Relativista', type: 'planet', mass: 6, radius: 1.0, color: 0x38bdf8, pos: { x: 18, z: 0 }, vel: { x: 0, z: 7.2 } });
+        showToast('🪐 Preset: Precesión Relativista (1PN / Mercurio)');
       } else if (name === 'kepler') {
         G = 1.0; deformationScale = 1.0;
         addBody({ name: 'Sol', type: 'star', mass: 1000, radius: 3.2, color: 0xf59e0b, pos: { x: 0, z: 0 }, vel: { x: 0, z: 0 }, isFixed: true });
@@ -1628,6 +1754,13 @@
         const ss = document.getElementById(p + '-slider-spd');
         const vs = document.getElementById(p + '-val-spd');
         if (ss && vs) { ss.value = timeScale; vs.innerText = timeScale.toFixed(1) + 'x'; }
+
+        const sc = document.getElementById(p + '-slider-c');
+        const vc = document.getElementById(p + '-val-c');
+        if (sc && vc) { sc.value = speedOfLight; vc.innerText = speedOfLight + ' u/s'; }
+
+        const cr = document.getElementById(p + '-chk-rel');
+        if (cr) cr.checked = relativisticEnabled;
       });
     }
 
@@ -1939,6 +2072,18 @@
         const ss = document.getElementById(p + '-slider-spd');
         if (ss) ss.oninput = (e) => { timeScale = parseFloat(e.target.value); syncSlidersUI(); };
 
+        const sc = document.getElementById(p + '-slider-c');
+        if (sc) sc.oninput = (e) => { speedOfLight = parseFloat(e.target.value); syncSlidersUI(); };
+
+        const cr = document.getElementById(p + '-chk-rel');
+        if (cr) {
+          cr.onchange = (e) => {
+            relativisticEnabled = e.target.checked;
+            syncSlidersUI();
+            showToast(relativisticEnabled ? '⚡ Efectos Relativistas (1PN) activados' : '⚡ Efectos Relativistas desactivados');
+          };
+        }
+
         const tg = document.getElementById(p + '-toggle-grid');
         if (tg) tg.onclick = toggleGridVisibility;
 
@@ -2013,13 +2158,14 @@
         }
       }
 
-      let kinetic = 0, pot = 0;
+      let kinetic = 0, pot = 0, totalMass = 0;
       for (let i = 0; i < bodies.length; i++) {
         const b = bodies[i];
         const y = calculatePotential(b.pos.x, b.pos.z);
         b.mesh.position.set(b.pos.x, y, b.pos.z);
         b.mesh.rotation.y += 0.01;
 
+        totalMass += b.mass;
         kinetic += 0.5 * b.mass * b.vel.lengthSq();
         for (let j = i + 1; j < bodies.length; j++) {
           const bj = bodies[j];
@@ -2047,6 +2193,8 @@
 
       controls.update();
       renderer.render(scene, camera);
+
+      cosmicAudio.updateDrone(totalMass);
 
       document.getElementById('m-count').innerText = bodies.length;
       document.getElementById('mob-sub-count').innerText = bodies.length;

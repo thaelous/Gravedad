@@ -1436,7 +1436,17 @@ export class SpacetimeEngine {
           const dz = bj.position.z - bi.position.z;
           const rSq = dx * dx + dz * dz + softeningSq;
           const dist = Math.sqrt(rSq);
-          const force = (G * bj.mass) / (rSq * dist);
+          let force = (G * bj.mass) / (rSq * dist);
+
+          // Corrección Relativista Post-Newtoniana (1PN Schwarzschild / Geodésicas covariantes)
+          const c = 42;
+          const cSq = c * c;
+          const dvx = bi.velocity.x - bj.velocity.x;
+          const dvz = bi.velocity.z - bj.velocity.z;
+          const L = Math.abs(dx * dvz - dz * dvx);
+          const potTerm = (3 * G * bj.mass) / (dist * cSq);
+          const LTerm = (3 * L * L) / (rSq * cSq);
+          force *= (1 + potTerm + LTerm);
 
           bi.acceleration.x += dx * force;
           bi.acceleration.z += dz * force;
@@ -1464,7 +1474,18 @@ export class SpacetimeEngine {
           const dz = bj.position.z - bi.position.z;
           const rSq = dx * dx + dz * dz + softeningSq;
           const dist = Math.sqrt(rSq);
-          const force = (G * bj.mass) / (rSq * dist);
+          let force = (G * bj.mass) / (rSq * dist);
+
+          // Corrección Relativista 1PN
+          const c = 42;
+          const cSq = c * c;
+          const dvx = bi.velocity.x - bj.velocity.x;
+          const dvz = bi.velocity.z - bj.velocity.z;
+          const L = Math.abs(dx * dvz - dz * dvx);
+          const potTerm = (3 * G * bj.mass) / (dist * cSq);
+          const LTerm = (3 * L * L) / (rSq * cSq);
+          force *= (1 + potTerm + LTerm);
+
           newAccX[i] += dx * force;
           newAccZ[i] += dz * force;
         }

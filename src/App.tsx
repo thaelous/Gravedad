@@ -65,18 +65,18 @@ export default function App() {
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<'launcher' | 'physics' | 'presets' | 'telemetry' | 'bodies'>('launcher');
 
-  // Accordion open/close states (for collapsible sections)
+  // Accordion open/close states (for collapsible sections - minimized by default)
   const [accordionState, setAccordionState] = useState<{ [key: string]: boolean }>({
-    launcher: true,
-    physics: true,
-    presets: true,
-    telemetry: true,
-    bodies: true,
+    launcher: false,
+    physics: false,
+    presets: false,
+    telemetry: false,
+    bodies: false,
   });
 
-  // UI Panels (Desktop)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isHudOpen, setIsHudOpen] = useState(true);
+  // UI Panels (Desktop - minimized by default)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isHudOpen, setIsHudOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'launcher' | 'physics' | 'presets' | 'bodies'>('launcher');
   const [selectedPresetId, setSelectedPresetId] = useState<string>('kepler-orbit');
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -1192,20 +1192,6 @@ export default function App() {
             <span className="hidden lg:inline">{isAudioActive ? '🔊 Silenciar' : '🔇 Audio'}</span>
           </button>
 
-          {/* Telemetría Toggle */}
-          <button
-            onClick={() => setIsHudOpen(!isHudOpen)}
-            className={`min-h-[44px] min-w-[44px] px-2.5 md:px-3 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold rounded-xl transition-all border ${
-              isHudOpen
-                ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.3)] hover:bg-cyan-500/30'
-                : 'bg-slate-900/80 border-slate-700/80 text-slate-400 hover:text-slate-200 hover:border-slate-500'
-            }`}
-            title="Alternar visibilidad de la ventana de telemetría orbital"
-          >
-            <Activity className={`w-4 h-4 ${isHudOpen ? 'text-cyan-400' : 'text-slate-500'}`} />
-            <span className="hidden xl:inline">{isHudOpen ? '📊 Ocultar Telemetría' : '📊 Mostrar Telemetría'}</span>
-          </button>
-
           {/* 🗑️ Botón Limpiar Escenario (Vaciar Grid) */}
           <button
             onClick={handleClear}
@@ -1432,7 +1418,7 @@ export default function App() {
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {/* 🪐 1. Presets */}
-              <details open className="group rounded-2xl bg-slate-900/70 border border-slate-800 p-2.5">
+              <details className="group rounded-2xl bg-slate-900/70 border border-slate-800 p-2.5">
                 <summary className="flex items-center justify-between font-bold text-xs text-cyan-300 cursor-pointer list-none py-1">
                   <span className="flex items-center gap-1.5">🪐 Presets</span>
                   <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
@@ -1505,7 +1491,7 @@ export default function App() {
               </details>
 
               {/* 🔧 2. Física & Gravedad */}
-              <details open className="group rounded-2xl bg-slate-900/70 border border-slate-800 p-2.5">
+              <details className="group rounded-2xl bg-slate-900/70 border border-slate-800 p-2.5">
                 <summary className="flex items-center justify-between font-bold text-xs text-cyan-300 cursor-pointer list-none py-1">
                   <span className="flex items-center gap-1.5">🔧 Física & Gravedad</span>
                   <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
@@ -1580,7 +1566,7 @@ export default function App() {
               </details>
 
               {/* 🎯 3. Selector de Masa a Lanzar */}
-              <details open className="group rounded-2xl bg-slate-900/70 border border-slate-800 p-2.5">
+              <details className="group rounded-2xl bg-slate-900/70 border border-slate-800 p-2.5">
                 <summary className="flex items-center justify-between font-bold text-xs text-cyan-300 cursor-pointer list-none py-1">
                   <span className="flex items-center gap-1.5">🎯 Selector de Masa a Lanzar</span>
                   <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
@@ -1692,7 +1678,7 @@ export default function App() {
               </details>
 
               {/* 📊 4. Telemetría */}
-              <details open className="group rounded-2xl bg-slate-900/70 border border-slate-800 p-2.5">
+              <details className="group rounded-2xl bg-slate-900/70 border border-slate-800 p-2.5">
                 <summary className="flex items-center justify-between font-bold text-xs text-cyan-300 cursor-pointer list-none py-1">
                   <span className="flex items-center gap-1.5">📊 Telemetría</span>
                   <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
@@ -1730,18 +1716,6 @@ export default function App() {
                   </div>
                 </div>
               </details>
-
-              {/* Enlace para abrir o descargar HTML autónomo */}
-              <div className="p-2 text-center">
-                <a
-                  href="/spacetime-relatividad.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[11px] text-cyan-400 hover:text-cyan-300 underline font-medium"
-                >
-                  <span>📄 Abrir versión HTML autocontenida independiente</span>
-                </a>
-              </div>
             </div>
           </div>
         )}
@@ -1839,19 +1813,6 @@ export default function App() {
           </div>
         </div>
       </div>
-
-      {/* Floating HUD toggle button on top right when closed */}
-      {!isHudOpen && (
-        <button
-          onClick={() => setIsHudOpen(true)}
-          className="absolute top-16 md:top-20 right-2 md:right-4 z-20 min-h-[44px] flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-950/85 backdrop-blur-md border border-cyan-500/30 text-cyan-300 hover:text-cyan-100 hover:border-cyan-400 transition-all shadow-xl shadow-cyan-950/20 text-xs font-semibold"
-          title="Mostrar Telemetría Orbital"
-        >
-          <Activity className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-          <span className="hidden sm:inline">📊 Mostrar Telemetría</span>
-          <span className="sm:hidden">📊 Datos</span>
-        </button>
-      )}
 
       {/* ========================================================= */}
       {/* DESKTOP BOTTOM FOOTER BAR */}
