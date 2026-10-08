@@ -1450,6 +1450,17 @@ export default function App() {
                     <span className="text-[10px] text-slate-400 font-normal">Sol y planeta Kepler</span>
                   </button>
                   <button
+                    onClick={() => handleLoadPreset('earth-moon-system')}
+                    className={`min-h-[44px] p-2 rounded-xl border text-left text-xs font-semibold flex flex-col justify-center transition-all ${
+                      selectedPresetId === 'earth-moon-system'
+                        ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 shadow-sm ring-1 ring-cyan-400/30'
+                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <span>🌍 Tierra y Luna</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Gravedad jerárquica</span>
+                  </button>
+                  <button
                     onClick={() => handleLoadPreset('binary-stars')}
                     className={`min-h-[44px] p-2 rounded-xl border text-left text-xs font-semibold flex flex-col justify-center transition-all ${
                       selectedPresetId === 'binary-stars'

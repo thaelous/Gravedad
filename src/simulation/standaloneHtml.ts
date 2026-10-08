@@ -732,6 +732,7 @@ export function generateStandaloneHtml(): string {
       <details open class="accordion-section">
         <summary>🪐 Presets Gravitatorios</summary>
         <div class="accordion-body grid-2">
+          <button class="btn btn-sm" onclick="loadPreset('earth_moon')" style="grid-column: span 2; border-color: #38bdf8; background: rgba(2, 132, 199, 0.28); color: #e0f2fe; font-weight: 700; min-height: 40px; box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);">🌍 Tierra y Luna (Órbita Jerárquica)</button>
           <button class="btn btn-sm" onclick="loadPreset('kepler')">🌟 Órbita Elíptica</button>
           <button class="btn btn-sm" onclick="loadPreset('binary')">🌀 Sistema Binario</button>
           <button class="btn btn-sm" onclick="loadPreset('collapse')">🌌 Nebulosa</button>
@@ -789,7 +790,11 @@ export function generateStandaloneHtml(): string {
               <span class="body-pick-mass">0.5u</span>
             </div>
           </div>
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+          <label style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; cursor: pointer; padding: 4px 0; color: #38bdf8;">
+            <span title="Al añadir una luna o cuerpo cerca de un planeta, hereda automáticamente la velocidad del planeta para formar una órbita estable">🛰️ Asistente Lunar (Heredar vel. planeta)</span>
+            <input type="checkbox" id="desk-chk-satellite" checked style="width: 16px; height: 16px;">
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; margin-top: 4px;">
             <input type="checkbox" id="desk-chk-fixed"> Masa estática (anclada fija)
           </label>
         </div>
@@ -859,6 +864,7 @@ export function generateStandaloneHtml(): string {
           <details open class="accordion-section">
             <summary>🪐 Presets</summary>
             <div class="accordion-body grid-2">
+              <button class="btn btn-sm" onclick="loadPreset('earth_moon')" style="grid-column: span 2; border-color: #38bdf8; background: rgba(2, 132, 199, 0.28); color: #e0f2fe; font-weight: 700; min-height: 44px; box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);">🌍 Tierra y Luna (Órbita Jerárquica)</button>
               <button class="btn btn-sm" onclick="loadPreset('kepler')">🌟 Órbita Elíptica</button>
               <button class="btn btn-sm" onclick="loadPreset('binary')">🌀 Sistema Binario</button>
               <button class="btn btn-sm" onclick="loadPreset('collapse')">🌌 Nebulosa</button>
@@ -916,6 +922,11 @@ export function generateStandaloneHtml(): string {
                   <span class="body-pick-mass">0.5u</span>
                 </div>
               </div>
+
+              <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer; padding: 6px 0; color: #38bdf8;">
+                <span title="Al añadir una luna o cuerpo cerca de un planeta, hereda automáticamente su velocidad para orbitarlo">🛰️ Asistente Lunar (Heredar vel. planeta)</span>
+                <input type="checkbox" id="mob-chk-satellite" checked style="width: 20px; height: 20px;">
+              </label>
 
               <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer; padding: 6px 0;">
                 <span>Masa estática (fija sin movimiento)</span>
@@ -977,7 +988,8 @@ export function generateStandaloneHtml(): string {
     let G = 1.0;
     let deformationScale = 1.0;
     let timeScale = 1.0;
-    const softening = 1.6;
+    const softening = 0.45; // Softening optimizado para permitir pozos de gravedad anidados y lunas estables
+    let satelliteAssist = true;
     let selectedType = 'planet';
     let isFixedNew = false;
     let isLauncherActive = true;
@@ -1123,7 +1135,7 @@ export function generateStandaloneHtml(): string {
       dom.addEventListener('pointercancel', onPointerUp);
 
       setupUI();
-      loadPreset('kepler');
+      loadPreset('earth_moon');
       animate();
     }
 
@@ -1287,7 +1299,7 @@ export function generateStandaloneHtml(): string {
       }
       scene.add(group);
 
-      const maxPts = 200;
+      const maxPts = 500;
       const trailPos = new Float32Array(maxPts * 3);
       const tGeo = new THREE.BufferGeometry();
       tGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
@@ -1371,14 +1383,15 @@ export function generateStandaloneHtml(): string {
       waveBursts.push({ x, z, radius: 0, amp, age: 0 });
     }
 
-    // --- Física Orbital ---
+    // --- Física Orbital: Gravedad Mutua Completa N-Cuerpos (F_ij = G * mi * mj / (r^2 + eps^2)) ---
     function stepPhysics(dt) {
       if (isPaused || bodies.length === 0) return;
-      const sub = 6;
+      const sub = 8; // 8 subpasos por fotograma para garantizar estabilidad orbital en sistemas jerárquicos (Lunas/Satélites)
       const sdt = (dt * timeScale) / sub;
 
       for (let s = 0; s < sub; s++) {
         const count = bodies.length;
+        // 1. Cálculo de fuerzas gravitacionales mutuas bidireccionales (N x N)
         for (let i = 0; i < count; i++) {
           const bi = bodies[i];
           if (bi.isFixed) continue;
@@ -1387,11 +1400,14 @@ export function generateStandaloneHtml(): string {
             const bj = bodies[j];
             const dx = bj.pos.x - bi.pos.x, dz = bj.pos.z - bi.pos.z;
             const rSq = dx * dx + dz * dz + softening * softening;
-            const f = (G * bj.mass) / (rSq * Math.sqrt(rSq));
+            const dist = Math.sqrt(rSq);
+            // Fuerza universal recíproca: a_i += G * m_j / r^2 en dirección (dx, dz)
+            const f = (G * bj.mass) / (rSq * dist);
             bi.vel.x += dx * f * sdt;
             bi.vel.z += dz * f * sdt;
           }
         }
+        // 2. Actualización de posiciones con integrador semi-implícito simpléctico (Euler-Cromer)
         for (let i = 0; i < count; i++) {
           const bi = bodies[i];
           if (!bi.isFixed) {
@@ -1535,11 +1551,34 @@ export function generateStandaloneHtml(): string {
     // --- Cargar Presets Gravitatorios ---
     function loadPreset(name) {
       clearBodies();
-      if (name === 'kepler') {
+      if (name === 'earth_moon') {
+        G = 1.0; deformationScale = 1.0;
+        // 1. Sol masivo central (estático o cuasi-estático)
+        addBody({ name: 'Sol Central', type: 'star', mass: 1200, radius: 3.4, color: 0xf59e0b, pos: { x: 0, z: 0 }, vel: { x: 0, z: 0 }, isFixed: true });
+
+        // 2. Tierra en órbita circular/elíptica estable alrededor del Sol: v_tierra = sqrt(G*M_sol/R)
+        const rTierra = 32;
+        const vTierra = Math.sqrt((G * 1200) / rTierra); // ~6.124
+        addBody({ name: 'Tierra', type: 'planet', mass: 55, radius: 1.4, color: 0x38bdf8, pos: { x: rTierra, z: 0 }, vel: { x: 0, z: vTierra } });
+
+        // 3. Luna orbitando a la Tierra (dentro del pozo gravitacional anidado de la Tierra)
+        // v_luna = v_tierra + v_orbita_local
+        const dLuna = 3.6;
+        const vLocal = Math.sqrt((G * 55) / dLuna); // ~3.909
+        addBody({
+          name: 'Luna',
+          type: 'asteroid',
+          mass: 1.0,
+          radius: 0.65,
+          color: 0xf1f5f9,
+          pos: { x: rTierra + dLuna, z: 0 },
+          vel: { x: 0, z: vTierra + vLocal }
+        });
+        showToast('🌍 Preset: Sol + Tierra + Luna (Órbita Jerárquica)');
+      } else if (name === 'kepler') {
         G = 1.0; deformationScale = 1.0;
         addBody({ name: 'Sol', type: 'star', mass: 1000, radius: 3.2, color: 0xf59e0b, pos: { x: 0, z: 0 }, vel: { x: 0, z: 0 }, isFixed: true });
-        addBody({ name: 'Tierra', type: 'planet', mass: 18, radius: 1.3, color: 0x38bdf8, pos: { x: 30, z: 0 }, vel: { x: 0, z: 4.4 } });
-        addBody({ name: 'Luna', type: 'asteroid', mass: 1.5, radius: 0.65, color: 0xcbd5e1, pos: { x: 33.2, z: 0 }, vel: { x: 0, z: 6.2 } });
+        addBody({ name: 'Tierra', type: 'planet', mass: 18, radius: 1.3, color: 0x38bdf8, pos: { x: 30, z: 0 }, vel: { x: 0, z: 5.77 } });
         showToast('🪐 Preset: Órbita Elíptica');
       } else if (name === 'binary') {
         G = 1.0; deformationScale = 0.95;
@@ -1607,7 +1646,7 @@ export function generateStandaloneHtml(): string {
       const labelNames = { star: 'Sol', planet: 'Tierra', giant: 'Júpiter', blackhole: 'Agujero N.', asteroid: 'Asteroide' };
       const fab = document.getElementById('mobile-launch-fab');
       if (fab) {
-        fab.innerHTML = \`<span id="mobile-launch-fab-text">🎯 Lanzar: \${labelNames[type]}</span>\`;
+        fab.innerHTML = '<span id="mobile-launch-fab-text">🎯 Lanzar: ' + labelNames[type] + '</span>';
       }
     }
 
@@ -1618,6 +1657,21 @@ export function generateStandaloneHtml(): string {
       if (sheet) sheet.classList.remove('open');
       if (bar) bar.style.display = 'flex';
       showToast('🎯 Arrastra en la pantalla para apuntar y lanzar');
+    }
+
+    // --- Asistente Orbital para Lunas y Satélites ---
+    function findHostBody(x, z) {
+      let closest = null, minD = Infinity;
+      for (let i = 0; i < bodies.length; i++) {
+        const b = bodies[i];
+        if (b.mass < 15) continue; // Solo cuerpos masivos (planetas o estrellas) pueden actuar como anfitriones orbitales
+        const d = Math.hypot(b.pos.x - x, b.pos.z - z);
+        if (d < 18 && d > b.radius * 0.85 && d < minD) {
+          minD = d;
+          closest = b;
+        }
+      }
+      return closest ? { body: closest, dist: minD } : null;
     }
 
     // --- Eventos Táctiles / Puntero para Lanzamiento 3D ---
@@ -1659,7 +1713,26 @@ export function generateStandaloneHtml(): string {
 
           const pos = trajLine.geometry.attributes.position.array;
           let simX = aimStart.x, simZ = aimStart.z;
-          const vx = diff.x * 0.28, vz = diff.z * 0.28;
+          let vx = diff.x * 0.28, vz = diff.z * 0.28;
+
+          // Asistente Orbital: previsualizar trayectoria teniendo en cuenta la velocidad del planeta más cercano
+          if (satelliteAssist) {
+            const host = findHostBody(aimStart.x, aimStart.z);
+            if (host) {
+              if (len < 0.6) {
+                const r = Math.max(host.dist, host.body.radius + 1.2);
+                const vCirc = Math.sqrt((G * host.body.mass) / r);
+                const dx = aimStart.x - host.body.pos.x, dz = aimStart.z - host.body.pos.z;
+                const dNorm = Math.hypot(dx, dz) || 1;
+                vx = host.body.vel.x + (-dz / dNorm) * vCirc;
+                vz = host.body.vel.z + (dx / dNorm) * vCirc;
+              } else {
+                vx += host.body.vel.x;
+                vz += host.body.vel.z;
+              }
+            }
+          }
+
           for (let i = 0; i < 30; i++) {
             pos[i * 3] = simX;
             pos[i * 3 + 1] = calculatePotential(simX, simZ) + 0.5;
@@ -1680,13 +1753,37 @@ export function generateStandaloneHtml(): string {
       trajLine.visible = false;
 
       const diff = new THREE.Vector3().subVectors(aimCurrent, aimStart);
-      const vel = diff.multiplyScalar(0.28);
+      let vel = diff.multiplyScalar(0.28);
 
-      let m = 18, r = 1.3, col = 0x38bdf8, name = 'Tierra';
+      let m = 20, r = 1.3, col = 0x38bdf8, name = 'Tierra';
       if (selectedType === 'star') { m = 1000; r = 3.2; col = 0xf59e0b; name = 'Sol'; }
       else if (selectedType === 'giant') { m = 80; r = 2.2; col = 0x6366f1; name = 'Júpiter'; }
       else if (selectedType === 'blackhole') { m = 2800; r = 3.0; col = 0x000000; name = 'Agujero N.'; }
-      else if (selectedType === 'asteroid') { m = 1.0; r = 0.55; col = 0x94a3b8; name = 'Asteroide'; }
+      else if (selectedType === 'asteroid') { m = 1.0; r = 0.65; col = 0xf1f5f9; name = 'Luna'; }
+
+      // 🛰️ Asistente para Lanzar Satélites/Lunas: cálculo automático o herencia de velocidad
+      let assistMsg = '';
+      if (satelliteAssist) {
+        const host = findHostBody(aimStart.x, aimStart.z);
+        if (host) {
+          if (diff.length() < 0.6) {
+            // Toque o arrastre mínimo: órbita circular perpendicular calculada
+            const rOrbit = Math.max(host.dist, host.body.radius + 1.2);
+            const vCirc = Math.sqrt((G * host.body.mass) / rOrbit);
+            const dx = aimStart.x - host.body.pos.x;
+            const dz = aimStart.z - host.body.pos.z;
+            const dNorm = Math.hypot(dx, dz) || 1;
+            vel.x = host.body.vel.x + (-dz / dNorm) * vCirc;
+            vel.z = host.body.vel.z + (dx / dNorm) * vCirc;
+            assistMsg = '🛰️ Órbita circular automática acoplada a ' + host.body.name;
+          } else {
+            // Arrastre manual: hereda el vector velocidad del planeta host
+            vel.x += host.body.vel.x;
+            vel.z += host.body.vel.z;
+            assistMsg = '🛰️ Velocidad orbital heredada de ' + host.body.name;
+          }
+        }
+      }
 
       addBody({
         name: name + ' ' + (bodies.length + 1),
@@ -1700,7 +1797,7 @@ export function generateStandaloneHtml(): string {
       });
 
       cosmicAudio.playLaunch(vel.length());
-      showToast('¡Cuerpo ' + name + ' lanzado!');
+      showToast(assistMsg ? assistMsg : '¡Cuerpo ' + name + ' lanzado!');
     }
 
     function onResize() {
@@ -1863,6 +1960,18 @@ export function generateStandaloneHtml(): string {
             document.getElementById('mob-chk-fixed').checked = isFixedNew;
           };
         }
+
+        const cs = document.getElementById(p + '-chk-satellite');
+        if (cs) {
+          cs.onchange = (e) => {
+            satelliteAssist = e.target.checked;
+            const dcs = document.getElementById('desk-chk-satellite');
+            const mcs = document.getElementById('mob-chk-satellite');
+            if (dcs) dcs.checked = satelliteAssist;
+            if (mcs) mcs.checked = satelliteAssist;
+            showToast(satelliteAssist ? '🛰️ Asistente Lunar activado' : '🛰️ Asistente Lunar desactivado');
+          };
+        }
       });
     }
 
@@ -1918,19 +2027,19 @@ export function generateStandaloneHtml(): string {
           pot -= (G * b.mass * bj.mass) / (b.pos.distanceTo(bj.pos) + softening);
         }
 
-        if (b.pos.distanceTo(b.lastTrail) > 0.4) {
+        if (b.pos.distanceTo(b.lastTrail) > 0.28) {
           b.lastTrail.copy(b.pos);
           const pos = b.trailPos;
-          if (b.trailCount < 200) {
+          if (b.trailCount < 500) {
             pos[b.trailCount * 3] = b.pos.x;
             pos[b.trailCount * 3 + 1] = y;
             pos[b.trailCount * 3 + 2] = b.pos.z;
             b.trailCount++;
           } else {
-            pos.copyWithin(0, 3, 200 * 3);
-            pos[199 * 3] = b.pos.x;
-            pos[199 * 3 + 1] = y;
-            pos[199 * 3 + 2] = b.pos.z;
+            pos.copyWithin(0, 3, 500 * 3);
+            pos[499 * 3] = b.pos.x;
+            pos[499 * 3 + 1] = y;
+            pos[499 * 3 + 2] = b.pos.z;
           }
           b.trail.geometry.attributes.position.needsUpdate = true;
           b.trail.geometry.setDrawRange(0, b.trailCount);

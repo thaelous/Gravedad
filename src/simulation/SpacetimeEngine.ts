@@ -1413,7 +1413,7 @@ export class SpacetimeEngine {
   private stepPhysics(dt: number) {
     if (this.config.isPaused || this.bodies.length === 0) return;
 
-    const subSteps = 6;
+    const subSteps = 10;
     const subDt = (dt * this.config.timeScale) / subSteps;
     const softeningSq = this.config.softening * this.config.softening;
     const G = this.config.G;
@@ -1421,12 +1421,10 @@ export class SpacetimeEngine {
     for (let step = 0; step < subSteps; step++) {
       const count = this.bodies.length;
 
-      // 1. Reset accelerations
+      // 1. Reset and compute current accelerations
       for (let i = 0; i < count; i++) {
         this.bodies[i].acceleration.set(0, 0, 0);
       }
-
-      // 2. Compute mutual gravitational forces
       for (let i = 0; i < count; i++) {
         const bi = this.bodies[i];
         if (bi.isFixed) continue;
@@ -1434,12 +1432,9 @@ export class SpacetimeEngine {
         for (let j = 0; j < count; j++) {
           if (i === j) continue;
           const bj = this.bodies[j];
-
           const dx = bj.position.x - bi.position.x;
-          const dy = 0; // orbits constrained to XZ plane
           const dz = bj.position.z - bi.position.z;
-
-          const rSq = dx * dx + dy * dy + dz * dz + softeningSq;
+          const rSq = dx * dx + dz * dz + softeningSq;
           const dist = Math.sqrt(rSq);
           const force = (G * bj.mass) / (rSq * dist);
 
@@ -1448,16 +1443,42 @@ export class SpacetimeEngine {
         }
       }
 
-      // 3. Integrate velocities and positions
+      // 2. Position update: r = r + v*dt + 0.5*a*dt^2
+      for (let i = 0; i < count; i++) {
+        const bi = this.bodies[i];
+        if (bi.isFixed) continue;
+        bi.position.x += bi.velocity.x * subDt + 0.5 * bi.acceleration.x * subDt * subDt;
+        bi.position.z += bi.velocity.z * subDt + 0.5 * bi.acceleration.z * subDt * subDt;
+      }
+
+      // 3. Compute new accelerations at new positions
+      const newAccX = new Float32Array(count);
+      const newAccZ = new Float32Array(count);
+      for (let i = 0; i < count; i++) {
+        const bi = this.bodies[i];
+        if (bi.isFixed) continue;
+        for (let j = 0; j < count; j++) {
+          if (i === j) continue;
+          const bj = this.bodies[j];
+          const dx = bj.position.x - bi.position.x;
+          const dz = bj.position.z - bi.position.z;
+          const rSq = dx * dx + dz * dz + softeningSq;
+          const dist = Math.sqrt(rSq);
+          const force = (G * bj.mass) / (rSq * dist);
+          newAccX[i] += dx * force;
+          newAccZ[i] += dz * force;
+        }
+      }
+
+      // 4. Velocity update: v = v + 0.5*(a_old + a_new)*dt
       for (let i = 0; i < count; i++) {
         const bi = this.bodies[i];
         if (bi.isFixed) continue;
 
-        bi.velocity.x += bi.acceleration.x * subDt;
-        bi.velocity.z += bi.acceleration.z * subDt;
-
-        bi.position.x += bi.velocity.x * subDt;
-        bi.position.z += bi.velocity.z * subDt;
+        bi.velocity.x += 0.5 * (bi.acceleration.x + newAccX[i]) * subDt;
+        bi.velocity.z += 0.5 * (bi.acceleration.z + newAccZ[i]) * subDt;
+        bi.acceleration.x = newAccX[i];
+        bi.acceleration.z = newAccZ[i];
 
         // Perihelion (closest orbital approach / highest curvature well point) detection
         let closestHeavier: BodyInternal | null = null;
