@@ -29,6 +29,7 @@ import {
   Menu,
   X,
   Target,
+  Zap,
 } from 'lucide-react';
 import { SpacetimeEngine } from './simulation/SpacetimeEngine';
 import { SIMULATION_PRESETS } from './simulation/presets';
@@ -52,6 +53,9 @@ export default function App() {
   const [waveIntensity, setWaveIntensity] = useState(1.0);
   const [bloomEnabled, setBloomEnabled] = useState(false);
   const [bloomStrength, setBloomStrength] = useState(1.35);
+  const [relativisticEnabled, setRelativisticEnabled] = useState(true);
+  const [speedOfLight, setSpeedOfLight] = useState(42);
+  const [satelliteAssist, setSatelliteAssist] = useState(true);
 
   // Placement Mode & Mobile Touch Launcher Mode
   const [selectedType, setSelectedType] = useState<BodyType>('planet');
@@ -301,6 +305,29 @@ export default function App() {
     }
   };
 
+  const handleToggleRelativistic = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.checked;
+    setRelativisticEnabled(val);
+    if (engineRef.current) {
+      engineRef.current.config.relativisticEnabled = val;
+    }
+  };
+
+  const handleSpeedOfLightChange = (val: number) => {
+    setSpeedOfLight(val);
+    if (engineRef.current) {
+      engineRef.current.config.speedOfLight = val;
+    }
+  };
+
+  const handleToggleSatelliteAssist = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.checked;
+    setSatelliteAssist(val);
+    if (engineRef.current) {
+      engineRef.current.config.satelliteAssist = val;
+    }
+  };
+
   const handleTypeSelect = (type: BodyType) => {
     setSelectedType(type);
     if (engineRef.current) {
@@ -335,6 +362,9 @@ export default function App() {
     if (preset.defaultConfig?.deformationScale !== undefined) setDeformationScale(preset.defaultConfig.deformationScale);
     if (preset.defaultConfig?.timeScale !== undefined) setTimeScale(preset.defaultConfig.timeScale);
     if (preset.defaultConfig?.softening !== undefined) setSoftening(preset.defaultConfig.softening);
+    if (preset.defaultConfig?.relativisticEnabled !== undefined) setRelativisticEnabled(preset.defaultConfig.relativisticEnabled);
+    if (preset.defaultConfig?.speedOfLight !== undefined) setSpeedOfLight(preset.defaultConfig.speedOfLight);
+    if (preset.defaultConfig?.satelliteAssist !== undefined) setSatelliteAssist(preset.defaultConfig.satelliteAssist);
     setIsPaused(false);
   };
 
@@ -620,6 +650,27 @@ export default function App() {
           />
         </label>
       </div>
+
+      {/* Asistente de Lanzamiento Relativo (Lunas / Satélites) */}
+      <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+        <label className="flex items-center justify-between cursor-pointer min-h-[36px]">
+          <div className="flex items-center gap-2">
+            <Compass className="w-4 h-4 text-cyan-400" />
+            <div>
+              <div className="text-xs font-semibold text-slate-200">Asistente Lunar / Orbital</div>
+              <div className="text-[10px] text-slate-400">
+                Hereda la velocidad del planeta anfitrión para colocar satélites en órbita estable
+              </div>
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            checked={satelliteAssist}
+            onChange={handleToggleSatelliteAssist}
+            className="w-5 h-5 rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0 cursor-pointer"
+          />
+        </label>
+      </div>
     </div>
   );
 
@@ -740,6 +791,43 @@ export default function App() {
             className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
           />
         </div>
+      </div>
+
+      {/* ⚡ Dinámica Relativista 1PN (Geodésicas & Corrección Post-Newtoniana) */}
+      <div className="pt-3 border-t border-slate-800/80 space-y-2.5">
+        <label className="flex items-center justify-between cursor-pointer py-1 min-h-[36px]">
+          <span className="text-xs font-bold text-violet-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Zap className="w-4 h-4 text-violet-400" />
+            Efectos Relativistas (1PN / Covariante)
+          </span>
+          <input
+            type="checkbox"
+            checked={relativisticEnabled}
+            onChange={handleToggleRelativistic}
+            className="w-5 h-5 rounded bg-slate-800 border-slate-700 text-violet-500 focus:ring-0 cursor-pointer"
+          />
+        </label>
+
+        {relativisticEnabled && (
+          <div className="space-y-1.5 pl-0.5">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-300 font-medium">Velocidad de la Luz (c)</span>
+              <span className="font-mono text-violet-300 font-bold">{speedOfLight} u/s</span>
+            </div>
+            <input
+              type="range"
+              min="15"
+              max="120"
+              step="1"
+              value={speedOfLight}
+              onChange={(e) => handleSpeedOfLightChange(parseFloat(e.target.value))}
+              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-400"
+            />
+            <div className="text-[10px] text-slate-400 bg-violet-950/20 border border-violet-500/20 rounded-lg p-2 leading-relaxed">
+              Geodésicas Schwarzschild: produce la <strong>precesión del perihelio</strong> (avance orbital tipo roseta). Disminuye <em>c</em> para acentuar el efecto de forma didáctica.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Switches de Visualización */}
@@ -1562,6 +1650,40 @@ export default function App() {
                       <span>🌐 {showGrid ? 'Malla Visible' : 'Malla Oculta'}</span>
                     </button>
                   </div>
+
+                  {/* Dinámica Relativista 1PN */}
+                  <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                    <label className="flex items-center justify-between cursor-pointer py-1 min-h-[36px]">
+                      <span className="text-xs font-bold text-violet-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-violet-400" />
+                        Efectos Relativistas (1PN)
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={relativisticEnabled}
+                        onChange={handleToggleRelativistic}
+                        className="w-5 h-5 rounded bg-slate-800 border-slate-700 text-violet-500 focus:ring-0 cursor-pointer"
+                      />
+                    </label>
+
+                    {relativisticEnabled && (
+                      <div className="space-y-1 pl-0.5">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-slate-300">Velocidad de la luz (c)</span>
+                          <span className="font-mono text-violet-300 font-bold">{speedOfLight} u/s</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="15"
+                          max="120"
+                          step="1"
+                          value={speedOfLight}
+                          onChange={(e) => handleSpeedOfLightChange(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-400"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </details>
 
@@ -1648,6 +1770,20 @@ export default function App() {
                       </div>
                     </button>
                   </div>
+
+                  {/* Asistente Lunar / Satélites */}
+                  <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer min-h-[44px]">
+                    <div className="flex items-center gap-2">
+                      <Compass className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs text-slate-300 font-medium">Asistente Lunar (Heredar vel.)</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={satelliteAssist}
+                      onChange={handleToggleSatelliteAssist}
+                      className="w-5 h-5 rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0 cursor-pointer"
+                    />
+                  </label>
 
                   {/* Selector fijo vs móvil */}
                   <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer min-h-[44px]">

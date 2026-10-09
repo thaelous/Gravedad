@@ -97,6 +97,9 @@ export class SpacetimeEngine {
     waveIntensity: 1.0,
     bloomEnabled: false,
     bloomStrength: 1.35,
+    relativisticEnabled: true,
+    speedOfLight: 42,
+    satelliteAssist: true,
   };
 
   public bodies: BodyInternal[] = [];
@@ -723,10 +726,44 @@ export class SpacetimeEngine {
     }
   }
 
+  public findHostBody(x: number, z: number): { body: BodyInternal; dist: number } | null {
+    let closest: BodyInternal | null = null;
+    let minDist = 24.0;
+    for (const b of this.bodies) {
+      if (b.mass >= 10) {
+        const dx = x - b.position.x;
+        const dz = z - b.position.z;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        if (d < minDist) {
+          minDist = d;
+          closest = b;
+        }
+      }
+    }
+    return closest ? { body: closest, dist: minDist } : null;
+  }
+
   private updateTrajectoryPreview(startPos: THREE.Vector3, initialVel: THREE.Vector3) {
     const positions = (this.aimTrajectoryLine.geometry.attributes.position as THREE.BufferAttribute).array as Float32Array;
     let simPos = startPos.clone();
     let simVel = initialVel.clone();
+
+    if (this.config.satelliteAssist) {
+      const host = this.findHostBody(startPos.x, startPos.z);
+      if (host) {
+        if (initialVel.length() < 0.2) {
+          const rOrbit = Math.max(host.dist, host.body.radius + 1.2);
+          const vCirc = Math.sqrt((this.config.G * host.body.mass) / rOrbit);
+          const nx = -(startPos.z - host.body.position.z) / host.dist;
+          const nz = (startPos.x - host.body.position.x) / host.dist;
+          simVel.set(host.body.velocity.x + nx * vCirc, 0, host.body.velocity.z + nz * vCirc);
+        } else {
+          simVel.x += host.body.velocity.x;
+          simVel.z += host.body.velocity.z;
+        }
+      }
+    }
+
     const dt = 0.12;
     const steps = 50;
 
@@ -1392,6 +1429,23 @@ export class SpacetimeEngine {
         break;
     }
 
+    const finalVel = velocity.clone();
+    if (this.config.satelliteAssist) {
+      const host = this.findHostBody(position.x, position.z);
+      if (host) {
+        if (velocity.length() < 0.2) {
+          const rOrbit = Math.max(host.dist, host.body.radius + 1.2);
+          const vCirc = Math.sqrt((this.config.G * host.body.mass) / rOrbit);
+          const nx = -(position.z - host.body.position.z) / host.dist;
+          const nz = (position.x - host.body.position.x) / host.dist;
+          finalVel.set(host.body.velocity.x + nx * vCirc, 0, host.body.velocity.z + nz * vCirc);
+        } else {
+          finalVel.x += host.body.velocity.x;
+          finalVel.z += host.body.velocity.z;
+        }
+      }
+    }
+
     this.addBody({
       id,
       name,
@@ -1401,12 +1455,12 @@ export class SpacetimeEngine {
       color,
       glowColor,
       position: { x: position.x, y: 0, z: position.z },
-      velocity: { x: velocity.x, y: 0, z: velocity.z },
+      velocity: { x: finalVel.x, y: 0, z: finalVel.z },
       isFixed: this.placementFixed,
     });
 
     // Sound effect on launch
-    this.audio.playLaunch(velocity.length(), this.placementType === 'blackhole' || this.placementType === 'star');
+    this.audio.playLaunch(finalVel.length(), this.placementType === 'blackhole' || this.placementType === 'star');
   }
 
   // Physics integration (N-Body Semi-implicit Euler / Symplectic Verlet with sub-stepping)
@@ -1439,14 +1493,16 @@ export class SpacetimeEngine {
           let force = (G * bj.mass) / (rSq * dist);
 
           // Corrección Relativista Post-Newtoniana (1PN Schwarzschild / Geodésicas covariantes)
-          const c = 42;
-          const cSq = c * c;
-          const dvx = bi.velocity.x - bj.velocity.x;
-          const dvz = bi.velocity.z - bj.velocity.z;
-          const L = Math.abs(dx * dvz - dz * dvx);
-          const potTerm = (3 * G * bj.mass) / (dist * cSq);
-          const LTerm = (3 * L * L) / (rSq * cSq);
-          force *= (1 + potTerm + LTerm);
+          if (this.config.relativisticEnabled) {
+            const c = this.config.speedOfLight || 42;
+            const cSq = c * c;
+            const dvx = bi.velocity.x - bj.velocity.x;
+            const dvz = bi.velocity.z - bj.velocity.z;
+            const L = Math.abs(dx * dvz - dz * dvx);
+            const potTerm = (3 * G * bj.mass) / (dist * cSq);
+            const LTerm = (3 * L * L) / (rSq * cSq);
+            force *= (1 + potTerm + LTerm);
+          }
 
           bi.acceleration.x += dx * force;
           bi.acceleration.z += dz * force;
@@ -1477,14 +1533,16 @@ export class SpacetimeEngine {
           let force = (G * bj.mass) / (rSq * dist);
 
           // Corrección Relativista 1PN
-          const c = 42;
-          const cSq = c * c;
-          const dvx = bi.velocity.x - bj.velocity.x;
-          const dvz = bi.velocity.z - bj.velocity.z;
-          const L = Math.abs(dx * dvz - dz * dvx);
-          const potTerm = (3 * G * bj.mass) / (dist * cSq);
-          const LTerm = (3 * L * L) / (rSq * cSq);
-          force *= (1 + potTerm + LTerm);
+          if (this.config.relativisticEnabled) {
+            const c = this.config.speedOfLight || 42;
+            const cSq = c * c;
+            const dvx = bi.velocity.x - bj.velocity.x;
+            const dvz = bi.velocity.z - bj.velocity.z;
+            const L = Math.abs(dx * dvz - dz * dvx);
+            const potTerm = (3 * G * bj.mass) / (dist * cSq);
+            const LTerm = (3 * L * L) / (rSq * cSq);
+            force *= (1 + potTerm + LTerm);
+          }
 
           newAccX[i] += dx * force;
           newAccZ[i] += dz * force;

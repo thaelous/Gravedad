@@ -29,6 +29,9 @@ export interface SimulationConfig {
   waveIntensity: number;
   bloomEnabled: boolean;
   bloomStrength: number;
+  relativisticEnabled: boolean;
+  speedOfLight: number;
+  satelliteAssist: boolean;
 }
 
 export interface BodyPreset {
