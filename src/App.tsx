@@ -1201,21 +1201,21 @@ export default function App() {
       {/* ========================================================= */}
       {/* BARRA SUPERIOR RESPONSIVA */}
       {/* ========================================================= */}
-      <header className="absolute top-2 left-2 right-2 md:top-4 md:left-4 md:right-4 z-30 pointer-events-none flex items-center justify-between gap-2">
+      <header className="absolute top-0 left-0 right-0 w-full max-w-[100vw] box-border p-[max(8px,env(safe-area-inset-top,8px))] px-2.5 pb-1.5 md:p-4 z-30 pointer-events-none flex flex-wrap items-center justify-between gap-1.5 overflow-x-hidden rounded-b-xl">
         {/* Brand Title Badge */}
-        <div className="pointer-events-auto flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl bg-slate-950/85 backdrop-blur-md border border-cyan-500/20 shadow-xl shadow-cyan-950/20">
+        <div className="pointer-events-auto flex items-center gap-1.5 md:gap-2 px-2.5 py-1.5 md:px-4 md:py-2.5 rounded-xl bg-slate-950/85 backdrop-blur-md border border-cyan-500/20 shadow-xl shadow-cyan-950/20">
           <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#38bdf8]" />
-          <h1 className="text-xs md:text-sm font-bold tracking-wider uppercase text-cyan-400 font-mono">
+          <h1 className="text-[11px] md:text-sm font-bold tracking-wider uppercase text-cyan-400 font-mono">
             <span className="md:hidden">✦ Espaciotiempo</span>
             <span className="hidden md:inline">Curvatura del Espaciotiempo & N-Cuerpos</span>
           </h1>
         </div>
 
         {/* Global Action Buttons */}
-        <div className="pointer-events-auto flex items-center gap-1.5 md:gap-2">
+        <div className="pointer-events-auto flex items-center flex-wrap gap-1 md:gap-2 justify-end">
           {/* Selector Superior de Vistas de Cámara: 🎥 Vista */}
-          <div className="flex items-center bg-slate-950/85 backdrop-blur-md border border-cyan-500/30 rounded-xl px-2 py-1 gap-1.5 shadow-lg shadow-cyan-950/20">
-            <span className="text-cyan-400 font-bold text-xs flex items-center gap-1 select-none whitespace-nowrap">
+          <div className="flex items-center bg-slate-950/85 backdrop-blur-md border border-cyan-500/30 rounded-xl px-1.5 py-0.5 md:px-2 md:py-1 gap-1 shadow-lg shadow-cyan-950/20">
+            <span className="text-cyan-400 font-bold text-[11px] md:text-xs flex items-center gap-1 select-none whitespace-nowrap">
               <span>🎥</span>
               <span className="hidden sm:inline">Vista:</span>
             </span>
@@ -1228,7 +1228,7 @@ export default function App() {
                   engineRef.current.setCameraView(v);
                 }
               }}
-              className="bg-slate-900 text-cyan-200 text-xs font-semibold rounded-lg px-2 py-1 border border-cyan-500/40 focus:outline-none focus:border-cyan-400 cursor-pointer min-h-[36px]"
+              className="bg-slate-900 text-cyan-200 text-[11px] md:text-xs font-semibold rounded-lg px-1.5 py-1 border border-cyan-500/40 focus:outline-none focus:border-cyan-400 cursor-pointer min-h-[32px] md:min-h-[36px]"
               title="Seleccionar perspectiva de cámara con interpolación suave"
             >
               <option value="free">3D Libre</option>
@@ -1241,52 +1241,52 @@ export default function App() {
           {/* Pausa */}
           <button
             onClick={handleTogglePause}
-            className={`min-h-[44px] min-w-[44px] px-3 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold rounded-xl transition-all border ${
+            className={`min-h-[34px] md:min-h-[44px] px-2.5 py-1.5 md:px-3 md:py-2 flex items-center justify-center gap-1 text-[11px] md:text-xs font-semibold rounded-xl transition-all border ${
               isPaused
                 ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
                 : 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
             }`}
             title="Pausar / Reanudar simulación"
           >
-            {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+            {isPaused ? <Play className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Pause className="w-3.5 h-3.5 md:w-4 md:h-4" />}
             <span className="hidden sm:inline">{isPaused ? 'Reanudar' : 'Pausar'}</span>
           </button>
 
           {/* Botón Principal: Mostrar / Ocultar Malla */}
           <button
             onClick={handleToggleGrid}
-            className={`min-h-[44px] min-w-[44px] px-3 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold rounded-xl transition-all border z-[2000] ${
+            className={`min-h-[34px] md:min-h-[44px] px-2.5 py-1.5 md:px-3 md:py-2 flex items-center justify-center gap-1 text-[11px] md:text-xs font-semibold rounded-xl transition-all border z-[2000] ${
               showGrid
                 ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 shadow-[0_0_16px_rgba(6,182,212,0.4)] hover:bg-cyan-500/35 ring-1 ring-cyan-400/30'
                 : 'bg-slate-900/80 border-slate-700/80 text-slate-400 hover:text-slate-200 hover:border-slate-500'
             }`}
             title="Alternar visibilidad del grid espaciotemporal (Grid On / Grid Off)"
           >
-            <Globe className={`w-4 h-4 ${showGrid ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
+            <Globe className={`w-3.5 h-3.5 md:w-4 md:h-4 ${showGrid ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
             <span>{showGrid ? '🌐 Grid On' : '🌐 Grid Off'}</span>
           </button>
 
           {/* Audio Espacial */}
           <button
             onClick={handleToggleAudio}
-            className={`min-h-[44px] min-w-[44px] px-2.5 md:px-3 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold rounded-xl transition-all border ${
+            className={`min-h-[34px] md:min-h-[44px] px-2 py-1.5 md:px-3 md:py-2 flex items-center justify-center gap-1 text-[11px] md:text-xs font-semibold rounded-xl transition-all border ${
               isAudioActive
                 ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.35)] hover:bg-cyan-500/35'
                 : 'bg-slate-900/80 border-slate-700/80 text-slate-400 hover:text-slate-200 hover:border-slate-600'
             }`}
             title={isAudioActive ? 'Silenciar sonidos cósmicos' : 'Activar audio espacial y drone cósmico'}
           >
-            {isAudioActive ? <Volume2 className="w-4 h-4 text-cyan-400 animate-pulse" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+            {isAudioActive ? <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-cyan-400 animate-pulse" /> : <VolumeX className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-500" />}
             <span className="hidden lg:inline">{isAudioActive ? '🔊 Silenciar' : '🔇 Audio'}</span>
           </button>
 
           {/* 🗑️ Botón Limpiar Escenario (Vaciar Grid) */}
           <button
             onClick={handleClear}
-            className="min-h-[44px] px-3 py-2 flex items-center justify-center gap-1.5 text-xs font-semibold rounded-xl transition-all border border-rose-500/40 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 hover:border-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.2)] active:scale-95"
+            className="min-h-[34px] md:min-h-[44px] px-2.5 py-1.5 md:px-3 md:py-2 flex items-center justify-center gap-1 text-[11px] md:text-xs font-semibold rounded-xl transition-all border border-rose-500/40 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 hover:border-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.2)] active:scale-95"
             title="Eliminar de inmediato todos los cuerpos celestes y aplanar la malla"
           >
-            <Trash2 className="w-4 h-4 text-rose-400" />
+            <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-rose-400" />
             <span>🗑️ Limpiar</span>
           </button>
 
@@ -1402,44 +1402,44 @@ export default function App() {
       {/* MOBILE CONTROLS & BOTTOM SHEET (CELULARES / PANTALLAS PEQUEÑAS) */}
       {/* z-index: 2000 garantizado por encima del canvas 3D y elementos */}
       {/* ========================================================= */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[2000] pointer-events-none flex flex-col items-center">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 w-full max-w-[100vw] box-border z-[2000] pointer-events-none flex flex-col items-center">
         {/* Dock de Accesos Rápidos Móvil (Siempre Visible encima del panel inferior) */}
-        <div className="w-full px-4 pb-2 pointer-events-auto flex flex-col items-center gap-1.5">
+        <div className="w-full max-w-[100vw] box-border px-2.5 pb-1 pointer-events-auto flex flex-col items-center gap-1">
           {isLauncherMode && (
-            <div className="px-3.5 py-1 rounded-full bg-slate-950/90 border border-cyan-400/80 text-cyan-200 text-[11px] font-medium shadow-xl shadow-cyan-950/50 flex items-center gap-1.5 animate-pulse">
+            <div className="px-3 py-1 rounded-full bg-slate-950/90 border border-cyan-400/80 text-cyan-200 text-[11px] font-medium shadow-xl shadow-cyan-950/50 flex items-center gap-1.5 animate-pulse">
               <span>🎯 Toca y arrastra en la pantalla para apuntar</span>
             </div>
           )}
-          {/* Dock de Accesos Rápidos Móvil (Siempre Visible encima del panel inferior) */}
-          <div className="w-full max-w-sm flex items-center justify-center gap-2">
+          {/* Fila de accesos rápidos responsive */}
+          <div className="w-full max-w-[100vw] box-border grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-1.5 mb-1.5">
             {/* 1. Botón Permanente de Visibilidad del Grid en Móvil */}
             <button
               onClick={handleToggleGrid}
-              className={`min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold transition-all border shadow-lg backdrop-blur-md active:scale-95 ${
+              className={`min-h-[44px] w-full px-2 py-2 rounded-full flex items-center justify-center gap-1 text-[11px] font-bold transition-all border shadow-lg backdrop-blur-md active:scale-95 ${
                 showGrid
                   ? 'bg-cyan-500/30 border-cyan-400 text-cyan-100 shadow-[0_0_18px_rgba(6,182,212,0.55)] ring-1 ring-cyan-400/50'
                   : 'bg-slate-950/90 border-slate-700/80 text-slate-400 hover:text-slate-200'
               }`}
               title="Alternar visibilidad del grid espaciotemporal (Grid On / Grid Off)"
             >
-              <Globe className={`w-4 h-4 ${showGrid ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
+              <Globe className={`w-3.5 h-3.5 ${showGrid ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
               <span>{showGrid ? 'Grid On' : 'Grid Off'}</span>
             </button>
 
             {/* 2. Botón Rápido Limpiar Escenario */}
             <button
               onClick={handleClear}
-              className="min-h-[44px] px-3.5 py-2 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold transition-all border border-rose-500/40 bg-slate-950/90 text-rose-300 hover:bg-rose-500/20 shadow-lg backdrop-blur-md active:scale-95"
+              className="min-h-[44px] w-full px-2 py-2 rounded-full flex items-center justify-center gap-1 text-[11px] font-bold transition-all border border-rose-500/40 bg-slate-950/90 text-rose-300 hover:bg-rose-500/20 shadow-lg backdrop-blur-md active:scale-95"
               title="Vaciar espacio, aplanar la malla y resetear telemetría"
             >
-              <Trash2 className="w-4 h-4 text-rose-400" />
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
               <span>Limpiar</span>
             </button>
 
             {/* 3. Botón de Lanzar Cuerpo */}
             <button
               onClick={() => handleToggleLauncherMode()}
-              className={`flex-1 min-h-[44px] px-3 py-2 rounded-full flex items-center justify-center gap-1.5 text-xs font-bold transition-all shadow-xl backdrop-blur-md border active:scale-95 ${
+              className={`min-h-[44px] w-full px-2 py-2 rounded-full flex items-center justify-center gap-1 text-[11px] font-bold transition-all shadow-xl backdrop-blur-md border active:scale-95 ${
                 isLauncherMode
                   ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 shadow-[0_0_16px_rgba(6,182,212,0.4)] ring-1 ring-cyan-400/30'
                   : 'bg-slate-950/90 border-slate-700 text-slate-300 hover:border-cyan-400'
@@ -1447,7 +1447,7 @@ export default function App() {
               title="Toca para apuntar y arrastrar en la pantalla 3D"
             >
               <Crosshair
-                className={`w-4 h-4 ${isLauncherMode ? 'text-cyan-400 animate-spin' : 'text-cyan-400'}`}
+                className={`w-3.5 h-3.5 ${isLauncherMode ? 'text-cyan-400 animate-spin' : 'text-cyan-400'}`}
                 style={isLauncherMode ? { animationDuration: '6s' } : undefined}
               />
               <span className="truncate">🎯 {getBodyLabel(selectedType)}</span>
@@ -1459,7 +1459,8 @@ export default function App() {
         {!mobileSheetOpen && (
           <button
             onClick={() => setMobileSheetOpen(true)}
-            className="w-full pointer-events-auto min-h-[48px] bg-slate-950/95 backdrop-blur-2xl border-t border-cyan-500/40 px-4 py-3 flex items-center justify-between text-cyan-300 font-bold text-xs shadow-[0_-8px_30px_rgba(0,0,0,0.8)] active:bg-cyan-950/80 transition-colors"
+            style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 14px))' }}
+            className="w-full max-w-[100vw] box-border pointer-events-auto min-h-[48px] bg-slate-950/95 backdrop-blur-2xl border-t border-cyan-500/40 px-3.5 pt-2.5 flex items-center justify-between text-cyan-300 font-bold text-xs shadow-[0_-8px_30px_rgba(0,0,0,0.8)] active:bg-cyan-950/80 transition-colors"
           >
             <div className="flex items-center gap-2">
               <span className="text-sm">⚙️</span>
@@ -1474,10 +1475,13 @@ export default function App() {
           </button>
         )}
 
-        {/* 2. Panel Desplegable (Glassmorphism Oscuro, cubre 45%-50% inferior) */}
+        {/* 2. Panel Desplegable (Glassmorphism Oscuro, cubre máximo el 55% de pantalla) */}
         {mobileSheetOpen && (
-          <div className="w-full pointer-events-auto h-[48vh] max-h-[50vh] bg-slate-950/95 backdrop-blur-2xl border-t border-cyan-500/50 rounded-t-3xl shadow-[0_-15px_40px_rgba(0,0,0,0.9)] flex flex-col transition-all duration-300 ease-out">
-            {/* Encabezado del Panel Desplegable con botón ▼ Cerrar */}
+          <div
+            style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))' }}
+            className="w-full max-w-[100vw] box-border pointer-events-auto h-[52dvh] max-h-[55dvh] bg-slate-950/95 backdrop-blur-2xl border-t border-cyan-500/50 rounded-t-3xl shadow-[0_-15px_40px_rgba(0,0,0,0.9)] flex flex-col transition-all duration-300 ease-out"
+          >
+            {/* Encabezado del Panel Desplegable con barra y botón ▼ Cerrar / Minimizar */}
             <div
               onClick={() => setMobileSheetOpen(false)}
               className="px-4 py-2.5 border-b border-slate-800/80 flex items-center justify-between cursor-pointer bg-slate-900/60 rounded-t-3xl shrink-0"
@@ -1496,7 +1500,7 @@ export default function App() {
                 }}
                 className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-cyan-950/70 border border-cyan-500/40 text-cyan-200 hover:text-white font-bold text-xs flex items-center gap-1 shadow-sm active:scale-95 transition-all"
               >
-                <span>▼ Minimizar</span>
+                <span>▼ Cerrar / Minimizar</span>
               </button>
             </div>
 

@@ -86,26 +86,33 @@
     }
 
     /* Header Superior */
-    header {
+    header, .top-bar {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
+      padding: max(8px, env(safe-area-inset-top, 8px)) 10px 6px 10px;
       display: flex;
-      justify-content: space-between;
+      flex-wrap: wrap; /* Permitir ajuste fluido en pantallas angostas */
       align-items: center;
-      padding: 8px 14px;
+      justify-content: space-between;
+      gap: 6px;
+      overflow-x: hidden;
       z-index: 1000;
       pointer-events: none;
-      border-radius: 14px;
-      gap: 8px;
+      border-radius: 0 0 14px 14px;
     }
     header > * { pointer-events: auto; }
 
     .header-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 0;
     }
 
     .hud-title {
@@ -131,7 +138,8 @@
       display: flex;
       gap: 6px;
       align-items: center;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     /* Selector de Cámara Estilo Píldora Compacto */
@@ -294,36 +302,41 @@
     }
 
     /* Dock de Accesos Rápidos Móvil (Siempre Visible encima del panel inferior) */
-    .mobile-quick-dock {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 8px;
-      padding: 0 10px;
-      max-width: 96vw;
+    .mobile-quick-dock, .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      gap: 6px;
       width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
+      padding-left: 10px;
+      padding-right: 10px;
+      margin-bottom: 8px;
+      justify-content: center;
       z-index: 2000;
     }
 
     .quick-dock-btn {
       min-height: 44px;
-      min-width: 44px;
-      padding: 8px 14px;
+      min-width: 0;
+      width: 100%;
+      padding: 8px 6px;
       border-radius: 9999px;
       background: rgba(3, 7, 18, 0.94);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
       white-space: nowrap;
+      text-align: center;
+      box-sizing: border-box;
       z-index: 2000;
     }
     /* Estilo Glassmorphism con bordes azul neón cuando activo y grisáceo cuando apagado */
@@ -353,25 +366,27 @@
 
     /* Botón flotante para apuntar y lanzar */
     .mobile-launch-fab {
-      flex: 1;
-      max-width: 220px;
       min-height: 44px;
-      padding: 8px 14px;
+      min-width: 0;
+      width: 100%;
+      padding: 8px 6px;
       border-radius: 9999px;
       background: rgba(3, 7, 18, 0.94);
       backdrop-filter: blur(14px);
       border: 1px solid rgba(56, 189, 248, 0.5);
       color: #38bdf8;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 16px rgba(56,189,248,0.25);
       cursor: pointer;
       transition: all 0.2s ease;
       white-space: nowrap;
+      text-align: center;
+      box-sizing: border-box;
     }
     .mobile-launch-fab.active {
       background: rgba(2, 132, 199, 0.35);
@@ -380,11 +395,16 @@
       box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
     }
 
-    /* Barra / Pestaña visible permanente con el texto exacto */
-    .mobile-bottom-bar {
+    /* Barra / Pestaña visible permanente con el texto exacto y safe-area inferior */
+    .mobile-bottom-bar, .bottom-bar {
+      padding-bottom: max(12px, env(safe-area-inset-bottom, 14px)) !important;
       width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
+      padding-left: 10px;
+      padding-right: 10px;
+      padding-top: 10px;
       min-height: 48px;
-      padding: 10px 16px;
       background: rgba(3, 7, 18, 0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -412,11 +432,13 @@
       gap: 8px;
     }
 
-    /* Panel Desplegable (Glassmorphism Oscuro, cubre 40%-50% inferior) */
+    /* Panel Desplegable (Glassmorphism Oscuro, cubre máximo el 55% de pantalla) */
     .mobile-sheet {
       width: 100%;
-      height: 48vh;
-      max-height: 50vh;
+      max-width: 100vw;
+      box-sizing: border-box;
+      height: 52dvh;
+      max-height: 55dvh;
       background: rgba(3, 7, 18, 0.96);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
@@ -427,6 +449,7 @@
       flex-direction: column;
       overflow: hidden;
       animation: slideUp 0.25s ease-out forwards;
+      padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
     }
     .mobile-sheet.open {
       display: flex;
@@ -445,6 +468,7 @@
       align-items: center;
       background: rgba(15, 23, 42, 0.6);
       cursor: pointer;
+      flex-shrink: 0;
     }
     .mobile-sheet-title {
       font-size: 13px;
@@ -453,6 +477,14 @@
       display: flex;
       align-items: center;
       gap: 6px;
+    }
+    .sheet-drag-handle {
+      display: inline-block;
+      width: 28px;
+      height: 4px;
+      background: rgba(56, 189, 248, 0.45);
+      border-radius: 9999px;
+      margin-right: 6px;
     }
     .mobile-sheet-close {
       min-height: 38px;
@@ -471,10 +503,10 @@
 
     .mobile-sheet-content {
       flex: 1;
-      max-height: calc(50vh - 54px);
+      max-height: calc(55dvh - 56px);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      padding: 14px 16px;
+      padding: 12px 14px max(24px, env(safe-area-inset-bottom, 24px)) 14px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -596,14 +628,10 @@
     }
 
     @media (max-width: 768px) {
-      header {
-        top: 6px;
-        left: 6px;
-        right: 6px;
-        padding: 6px 10px;
-        gap: 6px;
-        flex-wrap: wrap;
-        max-width: calc(100vw - 12px);
+      header, .top-bar {
+        padding: max(6px, env(safe-area-inset-top, 6px)) 8px 4px 8px;
+        gap: 5px;
+        border-radius: 0 0 12px 12px;
       }
       .hud-formula {
         display: none !important;
@@ -628,11 +656,15 @@
       }
       .btn-row {
         gap: 4px;
+        flex: 1 1 auto;
+        justify-content: flex-end;
       }
-      .btn-sm {
-        min-height: 38px;
+      .btn, .btn-sm {
+        min-height: 36px;
         padding: 4px 8px;
         font-size: 11px;
+        flex: 1 1 auto;
+        max-width: fit-content;
       }
       #hud-telemetry {
         top: 62px;
@@ -641,15 +673,67 @@
         padding: 8px 12px;
         font-size: 11px;
       }
-      .mobile-quick-dock {
+      .mobile-quick-dock, .quick-actions {
         margin-bottom: 6px;
         padding: 0 6px;
         gap: 6px;
       }
-      .quick-dock-btn {
+      .quick-dock-btn, .mobile-launch-fab {
         min-height: 44px;
-        padding: 6px 12px;
+        padding: 6px 10px;
         font-size: 11px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header, .top-bar {
+        padding: max(6px, env(safe-area-inset-top, 6px)) 6px 4px 6px;
+        gap: 4px;
+        border-radius: 0 0 10px 10px;
+      }
+      .hud-title {
+        font-size: 10.5px;
+        letter-spacing: 0.02em;
+      }
+      .camera-selector-box {
+        padding: 1px 4px;
+        gap: 2px;
+      }
+      .camera-selector-label {
+        font-size: 9.5px;
+      }
+      .camera-select-input {
+        font-size: 9.5px;
+        padding: 3px 5px;
+        min-height: 32px;
+      }
+      .btn-row {
+        gap: 3px;
+        flex: 1 1 auto;
+        justify-content: flex-end;
+      }
+      .btn, .btn-sm {
+        min-height: 32px;
+        padding: 4px 6px;
+        font-size: 10.5px;
+        flex: 1 1 auto;
+        max-width: fit-content;
+      }
+      .mobile-quick-dock, .quick-actions {
+        padding-left: 6px;
+        padding-right: 6px;
+        gap: 4px;
+        grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
+      }
+      .quick-dock-btn, .mobile-launch-fab {
+        font-size: 10px;
+        padding: 6px 4px;
+        min-height: 42px;
+      }
+      .mobile-bottom-bar, .bottom-bar {
+        padding-left: 8px;
+        padding-right: 8px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 14px)) !important;
       }
     }
 
@@ -686,7 +770,7 @@
     <div id="launch-toast">¡Cuerpo lanzado a la órbita!</div>
 
     <!-- Barra Superior con Selector de Cámaras 🎥 Vista -->
-    <header class="glass-panel">
+    <header class="glass-panel top-bar">
       <div class="header-left">
         <div>
           <div class="hud-title">✦ Curvatura Espaciotiempo</div>
@@ -828,7 +912,7 @@
     <!-- ========================================================= -->
     <div class="mobile-controls-wrapper">
       <!-- Dock de Accesos Rápidos Móvil (Siempre Visible encima del panel inferior) -->
-      <div class="mobile-quick-dock">
+      <div class="mobile-quick-dock quick-actions">
         <!-- 1. Botón Permanente de Visibilidad del Grid en Móvil -->
         <button id="mob-grid-dock-btn" class="quick-dock-btn grid-btn active" title="Alternar visibilidad del grid espaciotemporal (Grid On / Grid Off)">
           <span class="grid-icon">🌐</span>
@@ -847,7 +931,7 @@
       </div>
 
       <!-- Barra Permanente "⚙️ Ajustes y Presets ▲" -->
-      <div id="mobile-toggle-bar" class="mobile-bottom-bar">
+      <div id="mobile-toggle-bar" class="mobile-bottom-bar bottom-bar">
         <div class="mobile-bottom-bar-title">
           <span>⚙️ Ajustes y Presets ▲</span>
         </div>
@@ -857,15 +941,16 @@
         </div>
       </div>
 
-      <!-- Panel Desplegable (40%-50% inferior, Glassmorphism Oscuro, Scroll Táctil) -->
+      <!-- Panel Desplegable (max-height: 55dvh, Glassmorphism Oscuro, Scroll Táctil) -->
       <div id="mobile-sheet" class="mobile-sheet">
-        <!-- Encabezado del Panel con botón "▼ Minimizar" -->
+        <!-- Encabezado del Panel con barra de arrastre y botón "▼ Cerrar / Minimizar" -->
         <div id="mobile-sheet-header" class="mobile-sheet-header">
           <div class="mobile-sheet-title">
+            <span class="sheet-drag-handle"></span>
             <span>⚙️ Ajustes y Presets</span>
           </div>
           <button id="mobile-close-btn" class="mobile-sheet-close">
-            <span>▼ Minimizar</span>
+            <span>▼ Cerrar / Minimizar</span>
           </button>
         </div>
 
